@@ -203,9 +203,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .nc-hl{font-size:12px;font-weight:600;line-height:1.4;color:var(--text);margin-bottom:3px;}
 .nc-src{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);}
 .nc-snip{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px;}
-.nc-abi{margin-top:6px;padding:4px 7px;background:rgba(232,160,48,0.05);border-radius:3px;border-left:2px solid var(--accent);}
-.nc-abi-lbl{font-family:'DM Mono',monospace;font-size:7px;font-weight:700;color:var(--accent);}
-.nc-abi-txt{font-size:8px;color:var(--muted);}
 .news-loading{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:18px;text-align:center;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;}
 .sp{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:5px;vertical-align:middle;}
 @keyframes spin{to{transform:rotate(360deg);}}
@@ -774,15 +771,27 @@ let chartsReady=false;
 const LBL=['Feb 27','Mar 1','Mar 3','Mar 5','Mar 7','Mar 9','Mar 11','Mar 13','Mar 15','Mar 17','Mar 19','Mar 21','Mar 24'];
 const BASE_OPT={responsive:true,maintainAspectRatio:false,animation:{duration:600},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,10,14,0.96)',borderColor:'rgba(232,160,48,0.22)',borderWidth:1,titleColor:'#dde1ec',bodyColor:'#8a92a8'}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6278',font:{family:'DM Mono',size:8}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6278',font:{family:'DM Mono',size:8}}}}};
 function mkLine(data,col,base){const s=[{data,borderColor:col,backgroundColor:col+'14',fill:true,tension:0.38,pointRadius:2,pointBackgroundColor:col,pointBorderColor:'#0a0c10',pointBorderWidth:1.5,borderWidth:2}];if(base!==undefined)s.push({data:Array(LBL.length).fill(base),borderColor:'rgba(90,98,120,0.4)',borderDash:[4,3],borderWidth:1,pointRadius:0,fill:false});return s;}
+// Store last fetched market data so charts can use it on init
+let lastMarketData = null;
+
 function initCharts(){
   if(chartsReady) return; chartsReady=true;
   const o=(cb)=>({...BASE_OPT,scales:{...BASE_OPT.scales,y:{...BASE_OPT.scales.y,ticks:{...BASE_OPT.scales.y.ticks,callback:cb}}}});
-  new Chart('cOil',{type:'line',data:{labels:LBL,datasets:mkLine([73,78,88,98,108,114,119,115,112,116,119,117,119],'#f04040',73)},options:o(v=>'$'+v)});
-  new Chart('cGas',{type:'line',data:{labels:LBL,datasets:mkLine([33,38,44,50,55,60,65,62,60,61,63,62,62],'#e87030',33)},options:o(v=>'€'+v)});
-  new Chart('cBarley',{type:'line',data:{labels:LBL,datasets:mkLine([240,248,258,270,282,295,308,312,315,318,320,318,320],'#e8a030',240)},options:o(v=>'$'+v)});
-  new Chart('cWheat',{type:'line',data:{labels:LBL,datasets:mkLine([5.4,5.7,6.1,6.5,6.9,7.2,7.5,7.6,7.7,7.75,7.8,7.7,7.8],'#d4a020',5.4)},options:o(v=>'$'+v.toFixed(1))});
-  new Chart('cAlum',{type:'line',data:{labels:LBL,datasets:mkLine([2200,2260,2320,2400,2460,2510,2560,2580,2600,2620,2640,2645,2650],'#4a9eff',2200)},options:o(v=>v>=1000?(v/1000).toFixed(1)+'k':v)});
-  new Chart('cUrea',{type:'line',data:{labels:LBL,datasets:mkLine([440,460,480,505,525,545,565,572,578,582,586,588,590],'#3ab87a',440)},options:o(v=>'$'+v)});
+
+  // Use live data for last datapoint if available, otherwise use static
+  const brent  = lastMarketData?.BRENT    || 119;
+  const ttf    = lastMarketData?.TTF      || 62;
+  const barley = lastMarketData?.BARLEY   || 320;
+  const wheat  = lastMarketData?.WHEAT    || 7.8;
+  const alum   = lastMarketData?.ALUMINUM || 2650;
+  const urea   = lastMarketData?.UREA     || 590;
+
+  new Chart('cOil',   {type:'line',data:{labels:LBL,datasets:mkLine([73,78,88,98,108,114,119,115,112,116,119,117,brent],'#f04040',73)},options:o(v=>'$'+v)});
+  new Chart('cGas',   {type:'line',data:{labels:LBL,datasets:mkLine([33,38,44,50,55,60,65,62,60,61,63,62,ttf],'#e87030',33)},options:o(v=>'€'+v)});
+  new Chart('cBarley',{type:'line',data:{labels:LBL,datasets:mkLine([240,248,258,270,282,295,308,312,315,318,320,318,barley],'#e8a030',240)},options:o(v=>'$'+v)});
+  new Chart('cWheat', {type:'line',data:{labels:LBL,datasets:mkLine([5.4,5.7,6.1,6.5,6.9,7.2,7.5,7.6,7.7,7.75,7.8,7.7,wheat],'#d4a020',5.4)},options:o(v=>'$'+v.toFixed(1))});
+  new Chart('cAlum',  {type:'line',data:{labels:LBL,datasets:mkLine([2200,2260,2320,2400,2460,2510,2560,2580,2600,2620,2640,2645,alum],'#4a9eff',2200)},options:o(v=>v>=1000?(v/1000).toFixed(1)+'k':v)});
+  new Chart('cUrea',  {type:'line',data:{labels:LBL,datasets:mkLine([440,460,480,505,525,545,565,572,578,582,586,588,urea],'#3ab87a',440)},options:o(v=>'$'+v)});
   new Chart('cComp',{type:'line',data:{labels:LBL,datasets:[
     {label:'Oil',data:[100,107,121,134,148,156,163,158,153,159,163,160,163],borderColor:'#f04040',backgroundColor:'rgba(240,64,64,0.04)',fill:true,tension:0.35,pointRadius:1.5,borderWidth:2},
     {label:'Gas',data:[100,115,133,152,167,182,197,188,182,185,191,188,188],borderColor:'#e87030',backgroundColor:'rgba(232,112,48,0.04)',fill:false,tension:0.35,pointRadius:1.5,borderWidth:2},
@@ -1086,6 +1095,23 @@ function pctColor(val){ return parseFloat(val)>0?'var(--red)':'var(--green)'; }
 
 function applyMarketData(m){
   if(!m) return;
+  lastMarketData = m; // store for chart init
+
+  // If charts already initialized, update last datapoint live
+  // If not yet initialized, lastMarketData will be used when they init
+  const chartUpdates2=[
+    {id:'cOil',val:m.BRENT},{id:'cGas',val:m.TTF},
+    {id:'cBarley',val:m.BARLEY},{id:'cWheat',val:m.WHEAT},
+    {id:'cAlum',val:m.ALUMINUM},{id:'cUrea',val:m.UREA},
+  ];
+  // If charts tab has been visited, force reinit with live data
+  if(chartsReady){
+    chartsReady=false;
+    ['cOil','cGas','cBarley','cWheat','cAlum','cUrea','cComp'].forEach(id=>{
+      const c=Chart.getChart(id); if(c) c.destroy();
+    });
+    initCharts();
+  }
 
   // ── Header FX chips ──────────────────────────────────────
   const chips={
@@ -1159,22 +1185,6 @@ function applyMarketData(m){
   Object.entries(badges).forEach(([id,{val,base}])=>{
     const el=document.getElementById(id);
     if(el){const d=pct(val,base); el.textContent=`▲ +${d}% vs Feb 27`;}
-  });
-
-  // ── Update chart last datapoint ──────────────────────────
-  // Push latest value onto each chart's dataset
-  const chartUpdates=[
-    {id:'cOil',val:m.BRENT},{id:'cGas',val:m.TTF},
-    {id:'cBarley',val:m.BARLEY},{id:'cWheat',val:m.WHEAT},
-    {id:'cAlum',val:m.ALUMINUM},{id:'cUrea',val:m.UREA},
-  ];
-  chartUpdates.forEach(({id,val})=>{
-    const chart=Chart.getChart(id);
-    if(chart){
-      // Replace last datapoint with live value
-      chart.data.datasets[0].data[chart.data.datasets[0].data.length-1]=val;
-      chart.update('none');
-    }
   });
 
   // ── Header info bar ──────────────────────────────────────
@@ -1295,7 +1305,6 @@ function renderNews(articles){
       <div class="nc-hl">${a.headline}</div>
       ${srcLink}
       <div class="nc-snip">${a.snippet}</div>
-      <div class="nc-abi"><span class="nc-abi-lbl">ABI EXPOSURE: </span><span class="nc-abi-txt">${a.abiRelevance}</span></div>
     </div>`;
   }).join('')}</div>`;
   document.getElementById('newsContainer').innerHTML=html;
