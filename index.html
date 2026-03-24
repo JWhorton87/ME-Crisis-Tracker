@@ -901,46 +901,28 @@ async function refreshNews(force){
 
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
-      model:'claude-sonnet-4-20250514',max_tokens:4000,
+      model:'claude-sonnet-4-20250514',max_tokens:2000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
-      system:`You are a senior crisis intelligence analyst for ABInBev (ABI). Today is ${todayStr}. The Iran/US/Israel war began on February 28, 2026 and is ongoing.
-
-YOUR TASK: Search the live web and return ONLY real articles published in the LAST 7 DAYS (from ${todayStr} going back 7 days). Focus heavily on the most recent 48 hours for breaking developments.
-
-═══ HARD RULES — VIOLATIONS WILL MISLEAD A CEO ═══
-1. DATE WINDOW: Articles must be published within the last 7 days of ${todayStr}. Anything older = REJECTED.
-2. CAUSATION: Every article MUST be directly caused by the Middle East conflict / Iran war / Strait of Hormuz closure. Ask: "Would this story exist without the Iran war?" If YES → REJECT IT.
-3. NO EVERGREEN CONTENT: Do not include generic beer industry, commodity, or economic articles that are not specifically about the ME crisis impact.
-4. COMPETITOR NEWS: Only include if article explicitly discusses ME war impact on that company. General earnings = REJECTED.
-5. REAL URLs ONLY: Use real URLs from search results. Empty string if not found — never fabricate.
-
-═══ RUN THESE 5 SEARCHES — PRIORITISE RECENCY ═══
-SEARCH 1 (breaking, last 48h): "Iran war Middle East ${todayStr}" AND "Hormuz ceasefire oil latest news"
-SEARCH 2 (ABI Asian markets, last 7 days): "Philippines India South Korea energy emergency Iran war March 2026"
-SEARCH 3 (beer/CPG supply chain, last 7 days): "beer barley aluminum glass Iran war Middle East supply chain 2026"
-SEARCH 4 (ABI LatAm + Europe, last 7 days): "Brazil Mexico Colombia peso real Iran war economy 2026" AND "Europe gas LNG beer energy Iran war 2026"
-SEARCH 5 (competitors + ABI, last 7 days): "Heineken Carlsberg ABInBev Middle East Iran war impact 2026"
-
-═══ OUTPUT FORMAT ═══
-Return ONLY valid JSON, no markdown, no backticks, no preamble:
-{"articles":[{
-  "headline":"Full verbatim headline from the actual article",
-  "source":"Publisher Name",
-  "url":"https://actual-url-from-search-results-or-empty-string",
-  "tag":"SUPPLY CHAIN|COMMODITY|SHIPPING|OIL & GAS|DIPLOMACY|BEER INDUSTRY|MARKETS|GOVERNMENT|COMPETITOR",
-  "impact":"HIGH|MEDIUM",
-  "snippet":"2-3 sentences. MUST explicitly state the causal link to the ME/Iran crisis.",
-  "abiRelevance":"Specific ABI exposure: which market, input cost, or financial risk",
-  "market":"Primary ABI market, e.g. Philippines / Brazil / Europe / Global",
-  "publishDate":"Month Day, Year — exact publication date from the article"
-}]}
-
-Return 10-12 articles. Most recent first.`,
-      messages:[{role:'user',content:`Today is ${todayStr}. Search all 5 topics. Return 10-12 articles from the LAST 7 DAYS as JSON. Every article must: (a) be published in the last 7 days, (b) be directly caused by the Iran/ME war, (c) have a real URL. Sort most recent first.`}]
+      system:`You are a crisis analyst for ABInBev. Today is ${todayStr}. Search for recent news about the Iran/Middle East war impact on energy, beer, shipping, and ABI markets. Return ONLY valid JSON with no markdown:
+{"articles":[{"headline":"...","source":"Publisher","url":"https://url-or-empty","tag":"SUPPLY CHAIN|COMMODITY|SHIPPING|OIL & GAS|DIPLOMACY|BEER INDUSTRY|MARKETS|GOVERNMENT|COMPETITOR","impact":"HIGH|MEDIUM","snippet":"2 sentences about ME crisis impact","abiRelevance":"1 line on ABI exposure","market":"e.g. Global / Brazil / India","publishDate":"Month Day, Year"}]}
+Rules: (1) articles must be from the last 7 days (2) must be directly caused by the Iran/ME war (3) return 6-8 articles only.`,
+      messages:[{role:'user',content:`Search for: "Iran war oil prices ${todayStr}" and "Middle East crisis beer supply chain energy 2026". Return 6-8 articles as JSON. Only articles from the last 7 days directly caused by the Iran war.`}]
     })});
 
+    // Log HTTP status for debugging
+    console.log('[News] HTTP status:', resp.status, resp.statusText);
+
+    if(!resp.ok){
+      const errText=await resp.text();
+      console.error('[News] API error response:', errText);
+      throw new Error(`API returned ${resp.status}: ${errText.substring(0,200)}`);
+    }
+
     const data=await resp.json();
+    console.log('[News] Response content blocks:', data.content?.length, '| Stop reason:', data.stop_reason);
+
     const text=data.content.map(b=>b.type==='text'?b.text:'').join('');
+    console.log('[News] Text length:', text.length, '| Preview:', text.substring(0,200));
 
     let parsed;
     try{
@@ -975,13 +957,16 @@ Return 10-12 articles. Most recent first.`,
     }
 
   }catch(e){
+    // Log the actual error so it's visible in Chrome DevTools Console
+    console.error('[News] Fetch failed:', e.message, e);
     // On error, show whatever is in the rolling store, or static fallback
     let fallback=[];
     try{ const s=localStorage.getItem(NEWS_ROLLING_KEY); if(s) fallback=JSON.parse(s); }catch(ex){}
     if(fallback.length===0){ const {articles}=mergeIntoRolling(staticNews()); fallback=articles; }
     renderNews(fallback);
     const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
-    document.getElementById('newsTs').textContent=`🔴 Live fetch failed — showing rolling store · ${now} ET`;
+    const errMsg = e.message ? e.message.substring(0,80) : 'unknown error';
+    document.getElementById('newsTs').textContent=`🔴 Live fetch failed (${errMsg}) — showing rolling store · ${now} ET · Open Chrome DevTools Console (F12) for details`;
   }
 }
 
