@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Iran Conflict — Global Oil & Gas Supply Impact · ABI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:#0a0c10; --card:#131720; --card2:#181d28; --card3:#1c2134;
+  --border:#1e2230; --border2:#252a38;
+  --text:#dde1ec; --muted:#5a6278; --muted2:#3a4058;
+  --accent:#e8a030; --red:#f04040; --green:#3ab87a; --blue:#3a78d4;
+  --c-source:#1e3a5f; --c-critical:#7f1d1d; --c-high:#9a3412;
+  --c-medhigh:#92400e; --c-medium:#854d0e; --c-lowmed:#1a3a1a; --c-low:#14532d; --c-default:#1c2133;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;display:flex;flex-direction:column;}
+
+/* ── HEADER ── */
+.hdr{flex-shrink:0;background:var(--card);border-bottom:1px solid var(--border);padding:0 14px;height:50px;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.hdr-left{display:flex;align-items:baseline;gap:10px;flex-shrink:0;}
+.eyebrow{font-family:'DM Mono',monospace;font-size:8px;letter-spacing:1.8px;color:var(--muted);text-transform:uppercase;white-space:nowrap;}
+.main-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--text);white-space:nowrap;}
+.hdr-center{display:flex;align-items:center;gap:6px;flex:1;justify-content:center;flex-wrap:nowrap;overflow:hidden;}
+.fx-chip{display:flex;align-items:center;gap:7px;background:var(--card2);border:1px solid var(--border2);border-radius:4px;padding:4px 10px;white-space:nowrap;}
+.fx-chip-left{display:flex;flex-direction:column;gap:2px;}
+.fx-chip-pair{font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.8px;text-transform:uppercase;}
+.fx-chip-delta{font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);letter-spacing:0.3px;}
+.fx-chip-right{display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
+.fx-chip-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--red);line-height:1;}
+.fx-chip-chg{font-family:'DM Mono',monospace;font-size:8px;color:var(--red);}
+.hdr-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.brent-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-align:right;}
+.conflict-badge{display:flex;align-items:center;gap:5px;border:1px solid rgba(240,64,64,0.35);background:rgba(240,64,64,0.07);padding:3px 9px;border-radius:20px;font-family:'DM Mono',monospace;font-size:8px;color:var(--red);letter-spacing:1px;text-transform:uppercase;white-space:nowrap;}
+.pulse-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 1.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.5)}}
+.refresh-all-btn{background:rgba(232,160,48,0.08);border:1px solid rgba(232,160,48,0.2);color:var(--accent);font-family:'DM Mono',monospace;font-size:8px;padding:3px 9px;border-radius:3px;cursor:pointer;transition:background 0.2s;white-space:nowrap;}
+.refresh-all-btn:hover{background:rgba(232,160,48,0.15);}
+.refresh-all-btn:disabled{opacity:0.5;cursor:not-allowed;}
+
+/* ── TICKER ── */
+.ticker-wrap{flex-shrink:0;height:24px;background:rgba(240,64,64,0.05);border-bottom:1px solid rgba(240,64,64,0.1);display:flex;align-items:center;overflow:hidden;}
+.ticker-lbl{background:var(--red);color:#fff;font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;padding:0 10px;height:100%;display:flex;align-items:center;flex-shrink:0;}
+.ticker-track{overflow:hidden;flex:1;}
+.ticker-inner{display:flex;white-space:nowrap;animation:scroll-ticker 55s linear infinite;}
+.ticker-inner:hover{animation-play-state:paused;}
+.ti{display:inline-flex;align-items:center;gap:6px;padding:0 18px;font-family:'DM Mono',monospace;font-size:9px;color:var(--text);border-right:1px solid rgba(255,255,255,0.05);}
+.ti-tag{font-size:7px;font-weight:700;padding:1px 4px;border-radius:2px;letter-spacing:1px;text-transform:uppercase;}
+.tag-brk{background:rgba(240,64,64,0.2);color:var(--red);}
+.tag-ind{background:rgba(74,158,255,0.2);color:#4a9eff;}
+.tag-mkt{background:rgba(232,160,48,0.2);color:var(--accent);}
+@keyframes scroll-ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── LAYOUT ── */
+.body-wrap{flex:1;display:flex;overflow:hidden;}
+.main-area{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+
+/* ── TABS ── */
+.tabs{flex-shrink:0;display:flex;border-bottom:1px solid var(--border);padding:0 14px;background:var(--card);}
+.tab-btn{padding:8px 14px;font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);}
+.tab-content{display:none;flex:1;overflow:hidden;}
+.tab-content.active{display:flex;flex-direction:column;}
+
+/* ── SIDEBAR (map only) ── */
+.sidebar{width:290px;flex-shrink:0;background:var(--card);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.sidebar-inner{flex:1;overflow-y:auto;padding:11px;}
+.sidebar-inner::-webkit-scrollbar{width:3px;}
+.sidebar-inner::-webkit-scrollbar-thumb{background:var(--border2);}
+.sb-title{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:9px;}
+.leg-item{display:flex;align-items:center;gap:6px;padding:3px 0;}
+.leg-swatch{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.leg-label{font-size:10px;color:var(--text);}
+.leg-sub{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);}
+.sb-div{height:1px;background:var(--border);margin:9px 0;}
+.rank-row{display:flex;align-items:flex-start;gap:6px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);}
+.rank-row:last-child{border-bottom:none;}
+.rank-num{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);width:13px;flex-shrink:0;padding-top:1px;}
+.rank-info{flex:1;}
+.rank-name{font-size:10px;font-weight:600;}
+.rank-detail{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-top:1px;line-height:1.4;}
+.rpill{font-family:'DM Mono',monospace;font-size:7px;font-weight:700;padding:2px 4px;border-radius:2px;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.rp-crit{background:rgba(127,29,29,0.3);color:#fca5a5;border:1px solid rgba(127,29,29,0.5);}
+.rp-high{background:rgba(154,52,18,0.3);color:#fdba74;border:1px solid rgba(154,52,18,0.5);}
+.rp-mh{background:rgba(146,64,14,0.3);color:#fcd34d;border:1px solid rgba(146,64,14,0.5);}
+.rp-med{background:rgba(133,77,14,0.3);color:#fde68a;border:1px solid rgba(133,77,14,0.5);}
+.rp-gain{background:rgba(20,83,45,0.3);color:#6ee7b7;border:1px solid rgba(20,83,45,0.5);}
+.stat-bar{flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);background:var(--card2);}
+.stat-cell{padding:7px 9px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
+.stat-cell:nth-child(2),.stat-cell:nth-child(4){border-right:none;}
+.stat-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500;color:var(--text);}
+.stat-lbl{font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);margin-top:2px;}
+
+/* ── MAP ── */
+.map-panel{flex:1;position:relative;overflow:hidden;background:#0b131e;}
+#mapSvg{width:100%;height:100%;display:block;}
+.map-footer{flex-shrink:0;padding:4px 12px;font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);background:var(--card);border-top:1px solid var(--border);}
+
+/* ── TOOLTIP ── */
+.tooltip{position:fixed;z-index:9999;background:rgba(8,10,14,0.97);border:1px solid rgba(232,160,48,0.22);border-radius:6px;padding:9px 12px;pointer-events:none;display:none;max-width:220px;box-shadow:0 6px 24px rgba(0,0,0,0.65);}
+.tt-name{font-size:13px;font-weight:600;margin-bottom:3px;}
+.tt-risk{font-family:'DM Mono',monospace;font-size:8px;font-weight:600;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.tt-row{display:flex;justify-content:space-between;gap:10px;margin-top:2px;}
+.tt-lbl{font-size:9px;color:var(--muted);}
+.tt-val{font-family:'DM Mono',monospace;font-size:9px;font-weight:500;}
+@keyframes hormuz-ring{0%{r:6;opacity:0.9}100%{r:18;opacity:0}}
+.hormuz-ring{animation:hormuz-ring 2s ease-out infinite;}
+
+/* ── EXEC TAB ── */
+.exec-tab{flex:1;overflow-y:auto;padding:14px 16px;}
+.exec-tab::-webkit-scrollbar{width:3px;}
+.exec-tab::-webkit-scrollbar-thumb{background:var(--border2);}
+.exec-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px;}
+.exec-card{background:var(--card);border:1px solid var(--border);border-radius:7px;padding:14px;position:relative;overflow:hidden;}
+.exec-card.span2{grid-column:span 2;}
+.exec-card.span3{grid-column:span 3;}
+.exec-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.exec-card.accent-red::before{background:var(--red);}
+.exec-card.accent-amber::before{background:var(--accent);}
+.exec-card.accent-blue::before{background:var(--blue);}
+.exec-card.accent-green::before{background:var(--green);}
+.exec-label{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:6px;}
+.exec-big{font-family:'Bebas Neue',sans-serif;font-size:64px;color:var(--accent);line-height:1;text-shadow:0 0 40px rgba(232,160,48,0.25);}
+.exec-big-sub{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1.5px;margin-top:2px;font-family:'DM Mono',monospace;}
+.exec-dates{font-family:'DM Mono',monospace;font-size:9px;color:var(--muted);margin-top:4px;}
+.progress-wrap{margin:10px 0 4px;}
+.progress-lbl{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-bottom:4px;}
+.progress-track{height:5px;background:var(--card3);border-radius:3px;overflow:hidden;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--accent),var(--red));border-radius:3px;width:33%;}
+.progress-marks{display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);margin-top:3px;}
+.forecast-rows{display:flex;flex-direction:column;gap:8px;}
+.fc-row{background:var(--card3);border:1px solid var(--border2);border-radius:5px;padding:10px 12px;display:flex;align-items:flex-start;gap:10px;}
+.fc-src{font-family:'DM Mono',monospace;font-size:8px;color:#4a9eff;text-transform:uppercase;letter-spacing:0.8px;width:130px;flex-shrink:0;padding-top:1px;}
+.fc-body{flex:1;}
+.fc-timeline{font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;}
+.fc-desc{font-size:10px;color:var(--muted);line-height:1.5;}
+.fc-prob{display:inline-block;margin-top:5px;font-family:'DM Mono',monospace;font-size:8px;background:rgba(74,158,255,0.08);border:1px solid rgba(74,158,255,0.15);color:#4a9eff;padding:2px 6px;border-radius:3px;}
+.oil-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.oil-kpi{background:var(--card3);border:1px solid var(--border2);border-radius:5px;padding:10px 12px;}
+.oil-kpi-lbl{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
+.oil-kpi-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--text);}
+.oil-kpi-unit{font-size:11px;font-weight:400;color:var(--muted);}
+.oil-kpi-chg{font-family:'DM Mono',monospace;font-size:9px;color:var(--red);margin-top:3px;}
+.oil-kpi-base{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;}
+.flash-news{display:flex;flex-direction:column;gap:7px;max-height:260px;overflow-y:auto;}
+.flash-news::-webkit-scrollbar{width:3px;}
+.flash-news::-webkit-scrollbar-thumb{background:var(--border2);}
+.flash-item{background:var(--card3);border:1px solid var(--border2);border-radius:5px;padding:9px 11px;display:flex;gap:8px;align-items:flex-start;}
+.flash-badge{font-family:'DM Mono',monospace;font-size:7px;font-weight:700;padding:2px 5px;border-radius:2px;text-transform:uppercase;letter-spacing:0.8px;flex-shrink:0;margin-top:1px;}
+.flash-red{background:rgba(240,64,64,0.15);color:var(--red);border:1px solid rgba(240,64,64,0.2);}
+.flash-amber{background:rgba(232,160,48,0.15);color:var(--accent);border:1px solid rgba(232,160,48,0.2);}
+.flash-blue{background:rgba(74,158,255,0.15);color:#4a9eff;border:1px solid rgba(74,158,255,0.2);}
+.flash-body{flex:1;}
+.flash-headline{font-size:12px;font-weight:600;line-height:1.4;color:var(--text);}
+.flash-meta{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;}
+.exec-loading{text-align:center;padding:20px;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;}
+
+/* ── CHARTS TAB (full width, no sidebar) ── */
+.charts-tab{flex:1;overflow-y:auto;padding:12px 14px;}
+.charts-tab::-webkit-scrollbar{width:3px;}
+.charts-tab::-webkit-scrollbar-thumb{background:var(--border2);}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.chart-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;}
+.chart-card.wide{grid-column:span 2;}
+.chart-title{font-size:11px;font-weight:600;color:var(--text);}
+.chart-sub{font-size:8px;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px;}
+.chart-badge{font-size:8px;font-family:'DM Mono',monospace;font-weight:600;padding:2px 5px;border-radius:2px;background:rgba(240,64,64,0.12);color:var(--red);border:1px solid rgba(240,64,64,0.16);}
+.chart-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:9px;}
+.chart-wrap{position:relative;height:150px;}
+.chart-wrap.tall{height:185px;}
+.fx-row{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px;}
+.fx-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:10px;}
+.fx-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+.fx-pair{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);letter-spacing:0.5px;text-transform:uppercase;}
+.fx-delta-badge{font-family:'DM Mono',monospace;font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;}
+.fx-delta-red{background:rgba(240,64,64,0.12);color:var(--red);border:1px solid rgba(240,64,64,0.2);}
+.fx-delta-green{background:rgba(58,184,122,0.12);color:var(--green);border:1px solid rgba(58,184,122,0.2);}
+.fx-rate{font-size:20px;font-weight:700;color:var(--red);line-height:1.1;}
+.fx-baseline{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-top:2px;margin-bottom:5px;}
+.fx-chg{font-family:'DM Mono',monospace;font-size:8px;color:var(--red);margin-top:2px;}
+.fx-note{font-size:8px;color:var(--muted);line-height:1.4;border-top:1px solid var(--border);padding-top:5px;margin-top:4px;}
+
+/* ── NEWS TAB (full width, no sidebar) ── */
+.news-tab{flex:1;overflow-y:auto;padding:12px 14px;}
+.news-tab::-webkit-scrollbar{width:3px;}
+.news-tab::-webkit-scrollbar-thumb{background:var(--border2);}
+.news-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.news-hdr-left{font-size:11px;color:var(--muted);}
+.news-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.news-card{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:12px;position:relative;transition:border-color 0.2s;cursor:default;}
+.news-card:hover{border-color:rgba(232,160,48,0.2);}
+.nc-tag{display:inline-block;font-size:7px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;padding:2px 5px;border-radius:2px;margin-bottom:6px;}
+.nc-imp{position:absolute;top:9px;right:9px;font-size:7px;font-weight:700;padding:2px 4px;border-radius:2px;text-transform:uppercase;letter-spacing:1px;}
+.nc-h{background:rgba(240,64,64,0.15);color:var(--red);}
+.nc-m{background:rgba(232,160,48,0.15);color:var(--accent);}
+.nc-hl{font-size:12px;font-weight:600;line-height:1.4;color:var(--text);margin-bottom:3px;}
+.nc-src{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);}
+.nc-snip{font-size:10px;color:var(--muted);line-height:1.5;margin-top:4px;}
+.nc-abi{margin-top:6px;padding:4px 7px;background:rgba(232,160,48,0.05);border-radius:3px;border-left:2px solid var(--accent);}
+.nc-abi-lbl{font-family:'DM Mono',monospace;font-size:7px;font-weight:700;color:var(--accent);}
+.nc-abi-txt{font-size:8px;color:var(--muted);}
+.news-loading{background:var(--card);border:1px solid var(--border);border-radius:6px;padding:18px;text-align:center;color:var(--muted);font-family:'DM Mono',monospace;font-size:10px;}
+.sp{display:inline-block;width:11px;height:11px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;margin-right:5px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* shared tab refresh bar */
+.tab-action-bar{flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;padding:5px 14px;background:var(--card);border-bottom:1px solid var(--border);gap:8px;}
+.tab-refresh-btn{background:rgba(232,160,48,0.07);border:1px solid rgba(232,160,48,0.18);color:var(--accent);font-family:'DM Mono',monospace;font-size:8px;padding:3px 10px;border-radius:3px;cursor:pointer;transition:background 0.2s;}
+.tab-refresh-btn:hover{background:rgba(232,160,48,0.14);}
+.tab-refresh-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.tab-timestamp{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<!-- ═══ HEADER ═══ -->
+<div class="hdr">
+  <div class="hdr-left">
+    <div>
+      <div class="eyebrow">Geopolitical Risk Assessment · Q1 2026</div>
+      <div class="main-title">Iran Conflict — ME Crisis Tracker</div>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <div class="fx-chip" id="chip-brl">
+      <div class="fx-chip-left"><div class="fx-chip-pair">USD/BRL</div><div class="fx-chip-delta">pre-crisis 5.08</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val">5.92</div><div class="fx-chip-chg">▲ +16.5% since Feb 27</div></div>
+    </div>
+    <div class="fx-chip" id="chip-eur">
+      <div class="fx-chip-left"><div class="fx-chip-pair">EUR/USD</div><div class="fx-chip-delta">pre-crisis 1.09</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val">1.07</div><div class="fx-chip-chg" style="color:#3ab87a">▼ −1.8% since Feb 27</div></div>
+    </div>
+    <div class="fx-chip" id="chip-mxn">
+      <div class="fx-chip-left"><div class="fx-chip-pair">USD/MXN</div><div class="fx-chip-delta">pre-crisis 17.1</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val">18.4</div><div class="fx-chip-chg">▲ +7.6% since Feb 27</div></div>
+    </div>
+    <div class="fx-chip" id="chip-cop">
+      <div class="fx-chip-left"><div class="fx-chip-pair">USD/COP</div><div class="fx-chip-delta">pre-crisis 3,890</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val">4,180</div><div class="fx-chip-chg">▲ +7.5% since Feb 27</div></div>
+    </div>
+    <div class="fx-chip" id="chip-inr">
+      <div class="fx-chip-left"><div class="fx-chip-pair">USD/INR</div><div class="fx-chip-delta">pre-crisis 84.1</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val">86.5</div><div class="fx-chip-chg">▲ +2.9% since Feb 27</div></div>
+    </div>
+    <div class="fx-chip" id="chip-brent" style="border-color:rgba(240,64,64,0.3)">
+      <div class="fx-chip-left"><div class="fx-chip-pair">BRENT</div><div class="fx-chip-delta">pre-crisis $73/bbl</div></div>
+      <div class="fx-chip-right"><div class="fx-chip-val" style="color:#f04040">$119</div><div class="fx-chip-chg" style="color:#f04040">▲ +63% since Feb 27</div></div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="brent-lbl">Sources: IEA · EIA · Deloitte · OSW<br>Mar 24, 2026 · Day 25 of conflict</div>
+    <button class="refresh-all-btn" id="refreshAllBtn" onclick="refreshAll()">⟳ Refresh All</button>
+    <div class="conflict-badge"><div class="pulse-dot"></div>Conflict Active</div>
+  </div>
+</div>
+
+<!-- ═══ TICKER ═══ -->
+<div class="ticker-wrap">
+  <div class="ticker-lbl">Breaking</div>
+  <div class="ticker-track"><div class="ticker-inner" id="tickerInner">
+    <div class="ti"><span class="ti-tag tag-brk">Breaking</span>Trump announces 5-day pause on Iranian energy site strikes — Iran denies any dialogue · 1h ago</div>
+    <div class="ti"><span class="ti-tag tag-ind">Industry</span>India brewers warn of shortages: glass bottle prices +20%, paper cartons doubled — ABInBev, Heineken &amp; Carlsberg impacted · 2h ago</div>
+    <div class="ti"><span class="ti-tag tag-mkt">Commodity</span>Barley +33% · Wheat +44% · Aluminum +20% · Urea +34% vs Feb 27 pre-crisis baseline</div>
+    <div class="ti"><span class="ti-tag tag-brk">Breaking</span>Strait of Hormuz: 3,000+ vessels stranded · analysts: closure unlikely to lift remainder of 2026 · 3h ago</div>
+    <div class="ti"><span class="ti-tag tag-mkt">Markets</span>EU TTF gas +59% · BRL at 5.92 · COP at 4,180 · ECB paused rate cuts Mar 19 · UK inflation to breach 5%</div>
+    <div class="ti"><span class="ti-tag tag-brk">Breaking</span>Trump announces 5-day pause on Iranian energy site strikes — Iran denies any dialogue · 1h ago</div>
+    <div class="ti"><span class="ti-tag tag-ind">Industry</span>India brewers warn of shortages: glass bottle prices +20%, paper cartons doubled — ABInBev, Heineken &amp; Carlsberg impacted · 2h ago</div>
+    <div class="ti"><span class="ti-tag tag-mkt">Commodity</span>Barley +33% · Wheat +44% · Aluminum +20% · Urea +34% vs Feb 27 pre-crisis baseline</div>
+    <div class="ti"><span class="ti-tag tag-brk">Breaking</span>Strait of Hormuz: 3,000+ vessels stranded · analysts: closure unlikely to lift remainder of 2026 · 3h ago</div>
+    <div class="ti"><span class="ti-tag tag-mkt">Markets</span>EU TTF gas +59% · BRL at 5.92 · COP at 4,180 · ECB paused rate cuts Mar 19 · UK inflation to breach 5%</div>
+  </div></div>
+</div>
+
+<!-- ═══ BODY ═══ -->
+<div class="body-wrap">
+<div class="main-area">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <div class="tab-btn active" onclick="switchTab('exec',this)">⚡ Executive</div>
+    <div class="tab-btn" onclick="switchTab('map',this)">🌍 Impact Map</div>
+    <div class="tab-btn" onclick="switchTab('charts',this)">📊 KPIs &amp; Charts</div>
+    <div class="tab-btn" onclick="switchTab('news',this)">📰 Live News</div>
+  </div>
+
+  <!-- ═══ EXECUTIVE TAB ═══ -->
+  <div class="tab-content active" id="tab-exec">
+    <div class="tab-action-bar">
+      <span class="tab-timestamp" id="execTs">Use ⟳ Refresh All in the header to update all data</span>
+    </div>
+    <div class="exec-tab" id="execContent">
+      <!-- Static initial state, refreshExec() populates AI data -->
+      <div class="exec-grid">
+
+        <!-- Day counter -->
+        <div class="exec-card accent-red">
+          <div class="exec-label">Days of Active Conflict</div>
+          <div class="exec-big" id="dayCount">25</div>
+          <div class="exec-big-sub">Days since US-Israel strikes on Iran</div>
+          <div class="exec-dates">Started Feb 28, 2026 &nbsp;·&nbsp; Today Mar 24, 2026</div>
+          <div class="progress-wrap">
+            <div class="progress-lbl"><span>Conflict start</span><span>Today (Day 25)</span><span>Median forecast</span></div>
+            <div class="progress-track"><div class="progress-fill"></div></div>
+            <div class="progress-marks"><span>Day 1</span><span>Day 30</span><span>Day 60</span><span>Day 90+</span></div>
+          </div>
+        </div>
+
+        <!-- Oil prices -->
+        <div class="exec-card accent-amber span2">
+          <div class="exec-label">Latest Oil &amp; Energy Prices</div>
+          <div class="oil-row">
+            <div class="oil-kpi">
+              <div class="oil-kpi-lbl">Brent Crude</div>
+              <div class="oil-kpi-val" id="kpi-brent">~$119<span class="oil-kpi-unit">/bbl</span></div>
+              <div class="oil-kpi-chg" id="kpi-brent-chg">▲ +63% vs. pre-crisis</div>
+              <div class="oil-kpi-base">Baseline Feb 27: ~$73/bbl</div>
+            </div>
+            <div class="oil-kpi">
+              <div class="oil-kpi-lbl">EU Gas TTF</div>
+              <div class="oil-kpi-val" id="kpi-ttf">~€62<span class="oil-kpi-unit">/MWh</span></div>
+              <div class="oil-kpi-chg" id="kpi-ttf-chg">▲ +88% vs. pre-crisis</div>
+              <div class="oil-kpi-base">Baseline Feb 27: ~€33/MWh</div>
+            </div>
+            <div class="oil-kpi">
+              <div class="oil-kpi-lbl">Hormuz Status</div>
+              <div class="oil-kpi-val" style="font-size:14px;color:var(--red)">CLOSED</div>
+              <div class="oil-kpi-chg">~20M bbl/day blocked</div>
+              <div class="oil-kpi-base">Analysts: closed rest of 2026</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Duration forecasts -->
+        <div class="exec-card accent-blue span3">
+          <div class="exec-label">Market &amp; Analyst Duration Forecasts — When Is This Expected to End?</div>
+          <div class="forecast-rows">
+            <div class="fc-row">
+              <div class="fc-src">Polymarket / Prediction Markets</div>
+              <div class="fc-body">
+                <div class="fc-timeline">Q2 2026 — Most likely resolution window</div>
+                <div class="fc-desc">Crowd markets pricing ~45% probability of ceasefire by Apr 30 and ~70% by Jun 30. Trump's 5-day strike pause on energy sites is first credible off-ramp signal. Iran missile capacity degraded 90% from peak days. Conflicting claims over diplomatic talks — Iran denies any dialogue.</div>
+                <div class="fc-prob">~45% by Apr 30 · ~70% by Jun 30</div>
+              </div>
+            </div>
+            <div class="fc-row">
+              <div class="fc-src">Deutsche Bank / Goldman Sachs / Deloitte</div>
+              <div class="fc-body">
+                <div class="fc-timeline">Apr–Jun 2026 — Base case for partial normalization</div>
+                <div class="fc-desc">Financial institutions project partial Hormuz reopening by mid-Q2 if current diplomatic signals hold. Full normalization expected 6–12 months post-ceasefire given infrastructure damage. Oil prices seen staying elevated above $90 through year-end in most scenarios.</div>
+                <div class="fc-prob">Base case: 60–90 day conflict window from Feb 28</div>
+              </div>
+            </div>
+            <div class="fc-row">
+              <div class="fc-src">WEF / ACLED / Bear Case</div>
+              <div class="fc-body">
+                <div class="fc-timeline">H2 2026+ — Structural shock scenario</div>
+                <div class="fc-desc">Conflict drags into second half; shipping disruptions persist through summer refill season triggering EU technical recession. "Yield cliff" for global agriculture if Hormuz stays closed through Northern Hemisphere planting season. 35% probability assigned by major risk firms.</div>
+                <div class="fc-prob">Bear case: 35% probability · Catastrophic agri impact from Q3</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Breaking/Flash news container -->
+        <div class="exec-card accent-red span3">
+          <div class="exec-label" style="display:flex;align-items:center;justify-content:space-between;">
+            <span>Latest Intelligence — US · Israel · Middle East</span>
+            <span id="flashTs" style="font-size:8px;color:var(--muted)">Click Refresh to load live</span>
+          </div>
+          <div class="flash-news" id="flashNews">
+            <div class="flash-item">
+              <span class="flash-badge flash-red">Breaking</span>
+              <div class="flash-body">
+                <div class="flash-headline">Trump announces 5-day pause on strikes against Iranian energy sites, citing "productive conversations"</div>
+                <div class="flash-meta">CNN · Mar 23, 2026 · Day 24</div>
+              </div>
+            </div>
+            <div class="flash-item">
+              <span class="flash-badge flash-red">Breaking</span>
+              <div class="flash-body">
+                <div class="flash-headline">Iran denies any negotiations or dialogue with Washington — dismisses Trump's announcement as attempt to lower energy prices</div>
+                <div class="flash-meta">Al Jazeera · Mar 23, 2026</div>
+              </div>
+            </div>
+            <div class="flash-item">
+              <span class="flash-badge flash-amber">Update</span>
+              <div class="flash-body">
+                <div class="flash-headline">Israeli Air Force continues strikes on Tehran — IRGC headquarters, missile launch pads targeted; attacks ongoing as of Mar 24</div>
+                <div class="flash-meta">IDF / Reuters · Mar 24, 2026 · Day 25</div>
+              </div>
+            </div>
+            <div class="flash-item">
+              <span class="flash-badge flash-amber">Update</span>
+              <div class="flash-body">
+                <div class="flash-headline">UK PM Starmer calls emergency meeting on economic fallout; sends short-range air defence systems to Middle East</div>
+                <div class="flash-meta">BBC / Al Jazeera · Mar 23, 2026</div>
+              </div>
+            </div>
+            <div class="flash-item">
+              <span class="flash-badge flash-blue">Intelligence</span>
+              <div class="flash-body">
+                <div class="flash-headline">Iran missile attacks down 90% from early days of war per US military; CENTCOM says 8,000+ Iranian targets hit since Feb 28</div>
+                <div class="flash-meta">NPR / Pentagon · Mar 21, 2026</div>
+              </div>
+            </div>
+            <div class="flash-item">
+              <span class="flash-badge flash-blue">Intelligence</span>
+              <div class="flash-body">
+                <div class="flash-headline">Trump signals considering "winding down" military efforts — says US "getting very close to meeting objectives"</div>
+                <div class="flash-meta">Truth Social / NPR · Mar 21, 2026</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MAP TAB ═══ (with sidebar) -->
+  <div class="tab-content" id="tab-map" style="flex-direction:row;">
+    <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
+      <div class="tab-action-bar">
+        <span class="tab-timestamp" id="mapTs">Map · Use ⟳ Refresh All in the header to update all data</span>
+      </div>
+      <div class="map-panel"><svg id="mapSvg"></svg></div>
+      <div class="map-footer">BLUE = ME Producer / Conflict Source &nbsp;·&nbsp; RED = Supply disruption (critical→high→med-high→medium) &nbsp;·&nbsp; GREEN = Low risk / beneficiary &nbsp;·&nbsp; Hover countries for detail &nbsp;·&nbsp; ⊙ Strait of Hormuz</div>
+    </div>
+    <!-- Sidebar only on map tab -->
+    <div class="sidebar">
+      <div class="sidebar-inner">
+        <div class="sb-title">Risk Classification</div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-source);border:1px solid #3a78d4"></div><div><div class="leg-label">ME Producer</div><div class="leg-sub">Conflict source region</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-critical)"></div><div><div class="leg-label">Critical</div><div class="leg-sub">Near-total supply threat</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-high)"></div><div><div class="leg-label">High</div><div class="leg-sub">Severe disruption</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-medhigh)"></div><div><div class="leg-label">Medium-High</div><div class="leg-sub">Significant impact</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-medium)"></div><div><div class="leg-label">Medium</div><div class="leg-sub">Meaningful exposure</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-lowmed)"></div><div><div class="leg-label">Low-Medium</div><div class="leg-sub">Price contagion</div></div></div>
+        <div class="leg-item"><div class="leg-swatch" style="background:var(--c-low)"></div><div><div class="leg-label">Low / Benefits</div><div class="leg-sub">Insulated or gains</div></div></div>
+        <div class="sb-div"></div>
+        <div class="sb-title">Most Impacted Countries</div>
+        <div class="rank-row"><div class="rank-num">1</div><div class="rank-info"><div class="rank-name">South Korea</div><div class="rank-detail">12% Hormuz flows — ~90% import dep.</div></div><div class="rpill rp-crit">Critical</div></div>
+        <div class="rank-row"><div class="rank-num">2</div><div class="rank-info"><div class="rank-name">Japan</div><div class="rank-detail">10% flows — 60.8% fossil · 150d reserve</div></div><div class="rpill rp-crit">Critical</div></div>
+        <div class="rank-row"><div class="rank-num">3</div><div class="rank-info"><div class="rank-name">Taiwan / Singapore</div><div class="rank-detail">~9% flows — key refinery hub</div></div><div class="rpill rp-crit">Critical</div></div>
+        <div class="rank-row"><div class="rank-num">4</div><div class="rank-info"><div class="rank-name">Philippines</div><div class="rank-detail">Other Asian 14% flows — no alt. supply</div></div><div class="rpill rp-crit">Critical</div></div>
+        <div class="rank-row"><div class="rank-num">5</div><div class="rank-info"><div class="rank-name">China</div><div class="rank-detail">37.7% of flows — >50% ME crude</div></div><div class="rpill rp-high">High</div></div>
+        <div class="rank-row"><div class="rank-num">6</div><div class="rank-info"><div class="rank-name">India</div><div class="rank-detail">14.7% flows — LPG shortage risk</div></div><div class="rpill rp-high">High</div></div>
+        <div class="rank-row"><div class="rank-num">7</div><div class="rank-info"><div class="rank-name">Pakistan</div><div class="rank-detail">Gulf LNG + LPG critical dep.</div></div><div class="rpill rp-high">High</div></div>
+        <div class="rank-row"><div class="rank-num">8</div><div class="rank-info"><div class="rank-name">Turkey</div><div class="rank-detail">Iran pipeline — 87% Iran gas exports</div></div><div class="rpill rp-med">Medium</div></div>
+        <div class="rank-row"><div class="rank-num">9</div><div class="rank-info"><div class="rank-name">Poland / Greece / Lithuania</div><div class="rank-detail">42–52% crude from ME · EU exposed</div></div><div class="rpill rp-med">Medium</div></div>
+        <div class="rank-row"><div class="rank-num">10</div><div class="rank-info"><div class="rank-name">UK / Germany / France / Italy</div><div class="rank-detail">>50% jet fuel · >20% diesel from Gulf</div></div><div class="rpill rp-med">Medium</div></div>
+        <div class="rank-row"><div class="rank-num">✦</div><div class="rank-info"><div class="rank-name">USA / Canada / Norway</div><div class="rank-detail">Net exporters — benefit from surge</div></div><div class="rpill rp-gain">Gain</div></div>
+      </div>
+      <div class="stat-bar">
+        <div class="stat-cell"><div class="stat-val">20M</div><div class="stat-lbl">bbl/day via Hormuz</div></div>
+        <div class="stat-cell"><div class="stat-val">+19%</div><div class="stat-lbl">Brent since Feb 27</div></div>
+        <div class="stat-cell"><div class="stat-val">84%</div><div class="stat-lbl">Asia Hormuz dep.</div></div>
+        <div class="stat-cell"><div class="stat-val">400M</div><div class="stat-lbl">barrels at-risk/mo</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CHARTS TAB (full width) ═══ -->
+  <div class="tab-content" id="tab-charts">
+    <div class="tab-action-bar">
+      <span class="tab-timestamp" id="chartsTs">Use ⟳ Refresh All in the header to update all data</span>
+    </div>
+    <div class="charts-tab">
+      <div class="fx-row">
+        <div class="fx-card" id="cfx-brl">
+          <div class="fx-card-top">
+            <div class="fx-pair">USD / BRL</div>
+            <div class="fx-delta-badge fx-delta-red">▲ +16.5% since Feb 27</div>
+          </div>
+          <div class="fx-rate">~5.92</div>
+          <div class="fx-baseline">pre-crisis baseline: 5.08</div>
+          <div class="fx-note">ABI #1 market. BRL weakness compresses USD earnings; higher COGS from energy + agri.</div>
+        </div>
+        <div class="fx-card" id="cfx-eur">
+          <div class="fx-card-top">
+            <div class="fx-pair">EUR / USD</div>
+            <div class="fx-delta-badge fx-delta-green">▼ −1.8% since Feb 27</div>
+          </div>
+          <div class="fx-rate" style="color:var(--green)">~1.07</div>
+          <div class="fx-baseline">pre-crisis baseline: 1.09</div>
+          <div class="fx-note">EU energy crisis. ECB paused Mar 19. Energy surcharges +30% on EU brewing ops.</div>
+        </div>
+        <div class="fx-card" id="cfx-mxn">
+          <div class="fx-card-top">
+            <div class="fx-pair">USD / MXN</div>
+            <div class="fx-delta-badge fx-delta-red">▲ +7.6% since Feb 27</div>
+          </div>
+          <div class="fx-rate">~18.4</div>
+          <div class="fx-baseline">pre-crisis baseline: 17.1</div>
+          <div class="fx-note">ABI #2 market. Energy pass-through; beer demand risk if inflation persists.</div>
+        </div>
+        <div class="fx-card" id="cfx-cop">
+          <div class="fx-card-top">
+            <div class="fx-pair">USD / COP</div>
+            <div class="fx-delta-badge fx-delta-red">▲ +7.5% since Feb 27</div>
+          </div>
+          <div class="fx-rate">~4,180</div>
+          <div class="fx-baseline">pre-crisis baseline: 3,890</div>
+          <div class="fx-note">Colombia ABI market (Bavaria). Energy import cost pressure; consumer sentiment declining.</div>
+        </div>
+        <div class="fx-card" id="cfx-inr">
+          <div class="fx-card-top">
+            <div class="fx-pair">USD / INR</div>
+            <div class="fx-delta-badge fx-delta-red">▲ +2.9% since Feb 27</div>
+          </div>
+          <div class="fx-rate">~86.5</div>
+          <div class="fx-baseline">pre-crisis baseline: 84.1</div>
+          <div class="fx-note">ABI India growth market. ME crude reliance; glass bottle shortage warnings issued.</div>
+        </div>
+      </div>
+      <div class="charts-grid">
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Brent Crude (USD/bbl)</div><div class="chart-sub">Feb 27 – today · Baseline $73</div></div><span class="chart-badge" id="badge-oil">▲ +63% vs Feb 27</span></div><div class="chart-wrap"><canvas id="cOil"></canvas></div></div>
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">EU Gas TTF (€/MWh)</div><div class="chart-sub">Feb 27 – today · Baseline €33</div></div><span class="chart-badge" id="badge-gas">▲ +88%</span></div><div class="chart-wrap"><canvas id="cGas"></canvas></div></div>
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Barley (USD/MT) — ABI #1 Input</div><div class="chart-sub">Feb 27 – today · Baseline $240</div></div><span class="chart-badge" id="badge-barley">▲ +33%</span></div><div class="chart-wrap"><canvas id="cBarley"></canvas></div></div>
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Wheat CBOT (USD/bu)</div><div class="chart-sub">Feb 27 – today · Baseline $5.40</div></div><span class="chart-badge" id="badge-wheat">▲ +44%</span></div><div class="chart-wrap"><canvas id="cWheat"></canvas></div></div>
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Aluminum LME (USD/MT)</div><div class="chart-sub">Feb 27 – today · Baseline $2,200</div></div><span class="chart-badge" id="badge-alum">▲ +20%</span></div><div class="chart-wrap"><canvas id="cAlum"></canvas></div></div>
+        <div class="chart-card"><div class="chart-hdr"><div><div class="chart-title">Urea Fertilizer (USD/MT)</div><div class="chart-sub">Feb 27 – today · Baseline $440</div></div><span class="chart-badge" id="badge-urea">▲ +34%</span></div><div class="chart-wrap"><canvas id="cUrea"></canvas></div></div>
+        <div class="chart-card wide"><div class="chart-hdr"><div><div class="chart-title">ABI Input Cost Index — Composite (Feb 27 = 100)</div><div class="chart-sub">Oil · Gas · Barley · Aluminum · Wheat — indexed from pre-crisis baseline</div></div><span class="chart-badge">▲ +32% avg</span></div><div class="chart-wrap tall"><canvas id="cComp"></canvas></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ NEWS TAB (full width) ═══ -->
+  <div class="tab-content" id="tab-news">
+    <div class="tab-action-bar">
+      <span class="tab-timestamp" id="newsTs">7-day rolling feed · Use ⟳ Refresh All in the header to fetch latest articles</span>
+      <button class="tab-refresh-btn" style="background:rgba(90,98,120,0.07);border-color:rgba(90,98,120,0.2);color:var(--muted);" onclick="clearRollingFeed()">✕ Clear feed</button>
+    </div>
+    <div class="news-tab">
+      <div id="newsContainer"><div class="news-loading"><span class="sp"></span>Press ⟳ Refresh All in the header to load the latest crisis intelligence...</div></div>
+    </div>
+  </div>
+
+</div><!-- /main-area -->
+</div><!-- /body-wrap -->
+
+<!-- TOOLTIP -->
+<div class="tooltip" id="tooltip">
+  <div class="tt-name" id="ttName"></div>
+  <div class="tt-risk" id="ttRisk"></div>
+  <div class="tt-row"><span class="tt-lbl" id="ttL1"></span><span class="tt-val" id="ttV1"></span></div>
+  <div class="tt-row"><span class="tt-lbl" id="ttL2"></span><span class="tt-val" id="ttV2"></span></div>
+  <div class="tt-row"><span class="tt-lbl" id="ttL3"></span><span class="tt-val" id="ttV3"></span></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// COUNTRY DATA
+// ═══════════════════════════════════════════════════════════
+const COUNTRIES = {
+  '364':{risk:'source',  name:'Iran',        s1:'Hormuz transit',   v1:'~20M bbl/day',    s2:'Conflict',        v2:'Active war zone',    s3:'Economy',         v3:'Freefall; infra destroyed'},
+  '682':{risk:'source',  name:'Saudi Arabia',s1:'Oil output',       v1:'~10M bbl/day',    s2:'Ras Tanura',      v2:'Refinery hit',       s3:'ABI exposure',    v3:'Largest MENA market'},
+  '368':{risk:'source',  name:'Iraq',        s1:'Oil exports',      v1:'~4M bbl/day',     s2:'Conflict',        v2:'US PMF strikes',     s3:'ABI market',      v3:'Fully disrupted'},
+  '784':{risk:'source',  name:'UAE',         s1:'Jebel Ali hub',    v1:'Serves 45-50M',   s2:'Fujairah port',   v2:'Attacked',           s3:'ABI distribution',v3:'Severely strained'},
+  '414':{risk:'source',  name:'Kuwait',      s1:'US Embassy',       v1:'Closed',          s2:'IRGC attacks',    v2:'Ongoing drones',     s3:'Beer/CPG dist.',  v3:'Shutdown'},
+  '634':{risk:'source',  name:'Qatar',       s1:'QatarEnergy LNG',  v1:'Halted',          s2:'Helium supply',   v2:'1/3 of global',      s3:'Al Udeid base',   v3:'Hit'},
+  '512':{risk:'source',  name:'Oman',        s1:'Sohar port',       v1:'Drone attack',    s2:'Hormuz passage',  v2:'Selective only',     s3:'ABI dist.',       v3:'Disrupted'},
+  '887':{risk:'source',  name:'Yemen',       s1:'Red Sea attacks',  v1:'Iran-linked',     s2:'Houthi stocks',   v2:'Running low',        s3:'Shipping lane',   v3:'High risk'},
+  '400':{risk:'source',  name:'Jordan',      s1:'Regional impact',  v1:'High',            s2:'Airspace',        v2:'Disrupted',          s3:'ABI exposure',    v3:'Moderate'},
+  '048':{risk:'source',  name:'Bahrain',     s1:'US 5th Fleet HQ',  v1:'At risk',         s2:'Missile attacks', v2:'Ongoing',            s3:'ABI dist.',       v3:'Disrupted'},
+  '422':{risk:'source',  name:'Lebanon',     s1:'Israeli strikes',  v1:'Ongoing',         s2:'Hezbollah',       v2:'Exchanges continuing',s3:'ABI market',     v3:'Shutdown'},
+  '376':{risk:'source',  name:'Israel',      s1:'Missile alerts',   v1:'Jerusalem/TA',    s2:'Casualties',      v2:'180+ in Dimona',     s3:'ABI operations',  v3:'Critically disrupted'},
+  '410':{risk:'critical',name:'South Korea', s1:'Hormuz flows',     v1:'12% of global',   s2:'Import dep.',     v2:'~90% crude',         s3:'Reserve',         v3:'150 days'},
+  '392':{risk:'critical',name:'Japan',       s1:'Hormuz flows',     v1:'10% of global',   s2:'Fossil dep.',     v2:'60.8%',              s3:'Reserve',         v3:'150 days'},
+  '158':{risk:'critical',name:'Taiwan',      s1:'Hormuz flows',     v1:'~9% of global',   s2:'Refinery role',   v2:'Key regional hub',   s3:'Semiconductor',   v3:'Helium disrupted'},
+  '702':{risk:'critical',name:'Singapore',   s1:'Refinery capacity',v1:'Key APAC hub',    s2:'Hormuz dep.',     v2:'~9% of flows',       s3:'ABI APAC hub',    v3:'Supply chain risk'},
+  '608':{risk:'critical',name:'Philippines', s1:'ME oil flows',     v1:'~14% of imports', s2:'Alternatives',    v2:'None available',     s3:'ABI market',      v3:'Severe consumer pressure'},
+  '764':{risk:'critical',name:'Thailand',    s1:'ME crude dep.',    v1:'High',            s2:'LNG imports',     v2:'Gulf-dependent',     s3:'ABI SE Asia',     v3:'Monitoring closely'},
+  '156':{risk:'high',    name:'China',       s1:'Hormuz flows',     v1:'37.7% of total',  s2:'ME crude dep.',   v2:'>50%',               s3:'Stocks',          v3:'Worst day in ~1yr'},
+  '356':{risk:'high',    name:'India',       s1:'Hormuz flows',     v1:'14.7% of total',  s2:'Rice at ports',   v2:'400K MT stuck',      s3:'ABI India',       v3:'Glass bottle shortage'},
+  '586':{risk:'high',    name:'Pakistan',    s1:'Gulf LNG dep.',    v1:'Critical',        s2:'LPG dependency',  v2:'Critical',           s3:'Consumer power',  v3:'Collapsing rapidly'},
+  '050':{risk:'high',    name:'Bangladesh',  s1:'Energy imports',   v1:'Gulf-dependent',  s2:'LNG supply',      v2:'Severely cut',       s3:'Food security',   v3:'At risk'},
+  '104':{risk:'high',    name:'Myanmar',     s1:'LNG imports',      v1:'Gulf-sourced',    s2:'Energy security', v2:'Severely stressed',  s3:'Consumer',        v3:'Acute pressure'},
+  '144':{risk:'high',    name:'Sri Lanka',   s1:'Oil imports',      v1:'80%+ Gulf',       s2:'Foreign reserves',v2:'Already depleted',   s3:'ABI market',      v3:'Consumer risk'},
+  '116':{risk:'high',    name:'Cambodia',    s1:'Energy imports',   v1:'Gulf-dependent',  s2:'LNG supply',      v2:'Disrupted',          s3:'Consumer',        v3:'Inflation risk'},
+  '704':{risk:'medhigh', name:'Vietnam',     s1:'Oil imports',      v1:'Partly Gulf',     s2:'Manufacturing',   v2:'Cost pressure',      s3:'ABI SE Asia',     v3:'Monitoring'},
+  '288':{risk:'medhigh', name:'Ghana',       s1:'Fuel imports',     v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Africa',      v3:'Exposure'},
+  '404':{risk:'medhigh', name:'Kenya',       s1:'Oil imports',      v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Africa',      v3:'Cost pressure'},
+  '800':{risk:'medhigh', name:'Uganda',      s1:'Fuel prices',      v1:'Rising sharply',  s2:'Food inflation',  v2:'Accelerating',       s3:'ABI Africa',      v3:'Exposure'},
+  '231':{risk:'medhigh', name:'Ethiopia',    s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',   v2:'At risk',            s3:'ABI Africa',      v3:'Exposure'},
+  '458':{risk:'medhigh', name:'Malaysia',    s1:'Net exporter',     v1:'Partial gain',    s2:'Palm oil demand', v2:'Rising (biofuel)',   s3:'ABI APAC',        v3:'Partially shielded'},
+  '792':{risk:'medium',  name:'Turkey',      s1:'Iran pipeline',    v1:'87% gas from Iran',s2:'Energy security',v2:'Severely stressed',  s3:'ABI Turkey',      v3:'Market at risk'},
+  '276':{risk:'medium',  name:'Germany',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Gas storage',     v2:'30% capacity',       s3:"ABI (Beck's)",    v3:'Energy surcharges +30%'},
+  '616':{risk:'medium',  name:'Poland',      s1:'ME crude dep.',    v1:'42–52%',          s2:'Rate cuts',       v2:'Paused',             s3:'ABI E. Europe',   v3:'Consumer pressure'},
+  '300':{risk:'medium',  name:'Greece',      s1:'ME crude dep.',    v1:'42–52%',          s2:'Shipping lanes',  v2:'At risk',            s3:'ABI Greece',      v3:'Exposure'},
+  '440':{risk:'medium',  name:'Lithuania',   s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy security', v2:'Stressed',           s3:'ABI Baltic',      v3:'Monitoring'},
+  '380':{risk:'medium',  name:'Italy',       s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Diesel',          v2:'>20% from Gulf',     s3:'Glass manuf.',    v3:'Surcharges +30%'},
+  '250':{risk:'medium',  name:'France',      s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Diesel',          v2:'>20% from Gulf',     s3:'ABI France',      v3:'Impacted'},
+  '826':{risk:'medium',  name:'UK',          s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Inflation',       v2:'To breach 5%',       s3:'ABI UK',          v3:'Packaging + energy'},
+  '724':{risk:'medium',  name:'Spain',       s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Spain',       v3:'Monitoring'},
+  '056':{risk:'medium',  name:'Belgium',     s1:'ME crude dep.',    v1:'Significant',     s2:'Port Antwerp',    v2:'Rerouting risk',     s3:'ABI HQ nation',   v3:'Brewing cost pressure'},
+  '528':{risk:'medium',  name:'Netherlands', s1:'ME crude dep.',    v1:'Significant',     s2:'Rotterdam port',  v2:'Rerouting costs',    s3:'ABI supply chain',v3:'Freight impact'},
+  '203':{risk:'medium',  name:'Czechia',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Rate cuts',       v2:'Paused',             s3:'ABI Czech',       v3:'(Pilsner Urquell)'},
+  '348':{risk:'medium',  name:'Hungary',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',    v2:'Surging',            s3:'ABI Hungary',     v3:'Exposure'},
+  '620':{risk:'medium',  name:'Portugal',    s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Portugal',    v3:'Monitoring'},
+  '040':{risk:'medium',  name:'Austria',     s1:'ME crude dep.',    v1:'Significant',     s2:'Gas storage',     v2:'30% cap. EU',        s3:'ABI Austria',     v3:'Energy pressure'},
+  '703':{risk:'medium',  name:'Slovakia',    s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',    v2:'Rising',             s3:'ABI Slovakia',    v3:'Exposure'},
+  '818':{risk:'medium',  name:'Egypt',       s1:'Suez Canal',       v1:'Traffic impacted',s2:'Tourism',         v2:'Disrupted',          s3:'ABI Egypt',       v3:'Grain import risk'},
+  '788':{risk:'medium',  name:'Tunisia',     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI N.Africa',    v3:'Exposure'},
+  '504':{risk:'medium',  name:'Morocco',     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI N.Africa',    v3:'Exposure'},
+  '012':{risk:'medium',  name:'Algeria',     s1:'LNG exporter',     v1:'Partial gain',    s2:'Domestic energy', v2:'Subsidised',         s3:'Regional',        v3:'Monitoring'},
+  '434':{risk:'medium',  name:'Libya',       s1:'Oil producer',     v1:'Partial gain',    s2:'Domestic inst.',  v2:'Ongoing',            s3:'Regional',        v3:'Monitoring'},
+  '760':{risk:'medium',  name:'Syria',       s1:'Regional spillover',v1:'High risk',      s2:'Conflict',        v2:'Active nearby',      s3:'ABI market',      v3:'Dormant'},
+  '729':{risk:'medium',  name:'Sudan',       s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',   v2:'At risk',            s3:'Regional',        v3:'Monitoring'},
+  '710':{risk:'medium',  name:'South Africa',s1:'Energy imports',   v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:"ABI (Carling)",   v3:'Cost pressure'},
+  '036':{risk:'medium',  name:'Australia',   s1:'Wheat acreage',    v1:'Down 15%',        s2:'Barley inputs',   v2:'Fertilizer crisis',  s3:'ABI Pacific',     v3:'Input cost pressure'},
+  '554':{risk:'medium',  name:'New Zealand', s1:'Energy imports',   v1:'Some Gulf dep.',  s2:'Consumer inf.',   v2:'Rising',             s3:'ABI NZ',          v3:'Monitoring'},
+  '360':{risk:'medium',  name:'Indonesia',   s1:'ME crude dep.',    v1:'20–25%',          s2:'Subsidies',       v2:'Gov. strain',        s3:'ABI Indonesia',   v3:'Economic headwinds'},
+  '032':{risk:'lowmed',  name:'Argentina',   s1:'BRL contagion',    v1:'Risk-off EM',     s2:'Rate cuts',       v2:'Delayed',            s3:'ABI LatAm',       v3:'Consumer headwinds'},
+  '152':{risk:'lowmed',  name:'Chile',       s1:'Rate cuts',        v1:'Delayed',         s2:'Energy inflation',v2:'Rising',             s3:'ABI LatAm',       v3:'Consumer exposure'},
+  '604':{risk:'lowmed',  name:'Peru',        s1:'Energy imports',   v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI LatAm',       v3:'Monitoring'},
+  '218':{risk:'lowmed',  name:'Ecuador',     s1:'Oil producer',     v1:'Partial gain',    s2:'Consumer costs',  v2:'Elevated',           s3:'ABI LatAm',       v3:'Monitoring'},
+  '834':{risk:'lowmed',  name:'Tanzania',    s1:'Fuel imports',     v1:'Rising costs',    s2:'Food inflation',  v2:'Accelerating',       s3:'ABI Africa',      v3:'Monitoring'},
+  '076':{risk:'lowmed',  name:'Brazil',      s1:'BRL rate',         v1:'5.92 vs USD',     s2:'Urea imports',    v2:'35% from Gulf',      s3:'ABI #1 market',   v3:'COGS rising; demand stable'},
+  '170':{risk:'low',     name:'Colombia',    s1:'USD/COP rate',     v1:'~4,180',          s2:'Net oil exporter',v2:'Partial gain',       s3:'ABI Colombia',    v3:'Consumer inflation risk'},
+  '840':{risk:'low',     name:'USA',         s1:'Gas prices',       v1:'11-month high',   s2:'CPI forecast',    v2:'~3%',                s3:'ABI US',          v3:'Packaging cost pressure'},
+  '124':{risk:'low',     name:'Canada',      s1:'Net exporter',     v1:'Oil price gain',  s2:'ABI Canada',      v2:'Relatively stable',  s3:'Crude exports',   v3:'Benefiting from surge'},
+  '578':{risk:'low',     name:'Norway',      s1:'Net exporter',     v1:'Major gain',      s2:'Sovereign fund',  v2:'Record inflows',     s3:'EU energy',       v3:'Key alt. supplier'},
+  '643':{risk:'low',     name:'Russia',      s1:'Net exporter',     v1:'Major gain',      s2:'Hormuz dep.',     v2:'Near zero',          s3:'Sanctions',       v3:'Pre-existing'},
+  '484':{risk:'low',     name:'Mexico',      s1:'Net exporter',     v1:'Partial gain',    s2:'ABI #2 market',   v2:'Peso at 18.4',       s3:'Consumer',        v3:'Energy cost pass-through'},
+  '266':{risk:'low',     name:'Gabon',       s1:'Oil exporter',     v1:'Price gain',      s2:'Regional',        v2:'Monitoring',         s3:'ABI Africa',      v3:'Limited exposure'},
+  '508':{risk:'low',     name:'Mozambique',  s1:'LNG producer',     v1:'Price gain',      s2:'Regional',        v2:'Monitoring',         s3:'ABI Africa',      v3:'Limited exposure'},
+  '566':{risk:'low',     name:'Nigeria',     s1:'Net exporter',     v1:'Price gain',      s2:'Domestic refining',v2:'Limited',           s3:'ABI Africa',      v3:'Consumer pressure'},
+  '024':{risk:'low',     name:'Angola',      s1:'Net exporter',     v1:'Price gain',      s2:'China exports',   v2:'At risk',            s3:'ABI Africa',      v3:'Monitoring'},
+};
+
+const RISK_COLORS={source:'#1e3a5f',critical:'#7f1d1d',high:'#9a3412',medhigh:'#92400e',medium:'#854d0e',lowmed:'#1a3a1a',low:'#14532d',default:'#1c2133'};
+const RISK_LABELS={source:'ME PRODUCER — Conflict Source Region',critical:'CRITICAL — Near-total supply threat',high:'HIGH — Severe disruption',medhigh:'MED-HIGH — Significant impact',medium:'MEDIUM — Meaningful exposure',lowmed:'LOW-MEDIUM — Price contagion',low:'LOW / GAIN — Insulated or benefits'};
+const RISK_LABEL_COLORS={source:'#90b8f0',critical:'#fca5a5',high:'#fdba74',medhigh:'#fcd34d',medium:'#fde68a',lowmed:'#86efac',low:'#6ee7b7'};
+
+function getTerritoryOverride(c){
+  const[lon,lat]=c;
+  if(lon>-60&&lon<-50&&lat>1&&lat<7) return'French Guiana';
+  if(lon>-62&&lon<-57&&lat>-53&&lat<-50) return'Falkland Islands';
+  if(lon>10&&lon<35&&lat>74&&lat<82) return'Svalbard';
+  if(lon>-60&&lon<-15&&lat>59&&lat<84) return'Greenland';
+  if(lon>-18&&lon<-13&&lat>27&&lat<30) return'Canary Islands';
+  return null;
+}
+
+// ═══════════════════════════════════════════════════════════
+// MAP
+// ═══════════════════════════════════════════════════════════
+let mapReady=false;
+function initMap(){
+  if(mapReady) return; mapReady=true;
+  const panel=document.querySelector('.map-panel');
+  const W=panel.clientWidth, H=panel.clientHeight;
+  const svgEl=document.getElementById('mapSvg');
+  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svgEl.setAttribute('width',W); svgEl.setAttribute('height',H);
+  const svg=d3.select(svgEl);
+  svg.append('rect').attr('width',W).attr('height',H).attr('fill','#0b131e');
+  const proj=d3.geoNaturalEarth1().scale(W/6.0).translate([W/2,H/2+H*0.05]);
+  const pg=d3.geoPath().projection(proj);
+  const g=svg.append('g');
+  const grat=d3.geoGraticule().step([30,30]);
+  g.append('path').datum(grat()).attr('d',pg).attr('fill','none').attr('stroke','rgba(255,255,255,0.03)').attr('stroke-width',0.5);
+  const tt=document.getElementById('tooltip');
+  fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json')
+    .then(r=>r.json()).then(world=>{
+      const feats=topojson.feature(world,world.objects.countries).features;
+      g.selectAll('path.c').data(feats).enter().append('path').attr('class','c')
+        .attr('d',pg)
+        .attr('fill',d=>{const id=String(+d.id).padStart(3,'0');if(+d.id===10)return'#0f1520';const c=COUNTRIES[id];return c?RISK_COLORS[c.risk]:RISK_COLORS.default;})
+        .attr('stroke',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&c.risk==='source')?'#3a78d4':'rgba(0,0,0,0.45)';})
+        .attr('stroke-width',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&c.risk==='source')?0.8:0.3;})
+        .style('cursor',d=>{const id=String(+d.id).padStart(3,'0');return(+d.id!==10&&COUNTRIES[id])?'pointer':'default';})
+        .on('mousemove',function(ev,d){
+          if(+d.id===10)return;
+          const id=String(+d.id).padStart(3,'0');
+          const c=COUNTRIES[id]; if(!c)return;
+          const ov=getTerritoryOverride(d3.geoCentroid(d));
+          document.getElementById('ttName').textContent=ov||c.name;
+          document.getElementById('ttRisk').textContent=RISK_LABELS[c.risk]||c.risk.toUpperCase();
+          document.getElementById('ttRisk').style.color=RISK_LABEL_COLORS[c.risk]||'#fff';
+          document.getElementById('ttL1').textContent=c.s1; document.getElementById('ttV1').textContent=c.v1;
+          document.getElementById('ttL2').textContent=c.s2; document.getElementById('ttV2').textContent=c.v2;
+          document.getElementById('ttL3').textContent=c.s3; document.getElementById('ttV3').textContent=c.v3;
+          tt.style.display='block';
+          tt.style.left=Math.min(ev.clientX+14,window.innerWidth-235)+'px';
+          tt.style.top=Math.min(ev.clientY-10,window.innerHeight-130)+'px';
+        }).on('mouseleave',()=>{tt.style.display='none';});
+      g.append('path').datum(topojson.mesh(world,world.objects.countries,(a,b)=>a!==b)).attr('d',pg).attr('fill','none').attr('stroke','rgba(0,0,0,0.5)').attr('stroke-width',0.3);
+      g.append('path').datum({type:'Sphere'}).attr('d',pg).attr('fill','none').attr('stroke','rgba(255,255,255,0.06)').attr('stroke-width',0.8);
+      const hPt=proj([56.5,26.5]);
+      if(hPt){
+        const hg=svg.append('g').attr('transform',`translate(${hPt[0]},${hPt[1]})`);
+        hg.append('circle').attr('class','hormuz-ring').attr('r',6).attr('fill','none').attr('stroke','#3a78d4').attr('stroke-width',1.5).attr('opacity',0.9);
+        hg.append('circle').attr('class','hormuz-ring').attr('r',6).attr('fill','none').attr('stroke','#3a78d4').attr('stroke-width',1.5).attr('opacity',0.9).style('animation-delay','1s');
+        hg.append('circle').attr('r',3).attr('fill','rgba(58,120,212,0.8)').attr('stroke','#3a78d4').attr('stroke-width',1);
+        svg.append('text').attr('x',hPt[0]+10).attr('y',hPt[1]+3).text('Strait of Hormuz').style('font-family','DM Mono,monospace').style('font-size','8px').attr('fill','#e8a030').attr('pointer-events','none').attr('opacity',0.9);
+      }
+      const rPt=proj([37,20]);
+      if(rPt){
+        svg.append('circle').attr('cx',rPt[0]).attr('cy',rPt[1]).attr('r',4).attr('fill','none').attr('stroke','#f04040').attr('stroke-width',1).attr('opacity',0.7);
+        svg.append('text').attr('x',rPt[0]+7).attr('y',rPt[1]+3).text('Red Sea').style('font-family','DM Mono,monospace').style('font-size','7px').attr('fill','#f04040').attr('opacity',0.75).attr('pointer-events','none');
+      }
+    }).catch(()=>{svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle').attr('fill','#5a6278').style('font-family','DM Mono,monospace').style('font-size','12px').text('Map requires network — please open in a browser with internet access');});
+}
+
+// ═══════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab,el){
+  document.querySelectorAll('.tab-btn').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='map') initMap();
+  if(tab==='charts') initCharts();
+}
+window.addEventListener('load',()=>{
+  // ── Day counter (always dynamic) ────────────────────────
+  updateDayCounter();
+
+  // ── Detect if running from local file system ─────────────
+  const isLocal = window.location.protocol === 'file:';
+  if(isLocal){
+    // Show a persistent banner explaining the limitation
+    const banner = document.createElement('div');
+    banner.id = 'hostingBanner';
+    banner.style.cssText = `
+      position:fixed; bottom:0; left:0; right:0; z-index:9998;
+      background:linear-gradient(90deg,rgba(232,160,48,0.12),rgba(232,160,48,0.06));
+      border-top:1px solid rgba(232,160,48,0.3);
+      padding:8px 16px; display:flex; align-items:center; gap:12px;
+      font-family:'DM Mono',monospace; font-size:10px; color:#dde1ec;
+    `;
+    banner.innerHTML = `
+      <span style="color:var(--accent);font-weight:700;">⚠ LOCAL FILE MODE</span>
+      <span style="color:#9098a8;">Live data refresh is blocked by your browser when opening from a local file. To enable live data for your team:</span>
+      <span style="color:var(--accent);">Host on SharePoint, Google Drive, or GitHub Pages → share that URL</span>
+      <span style="color:#5a6278;margin-left:auto;cursor:pointer;" onclick="document.getElementById('hostingBanner').style.display='none'">✕ dismiss</span>
+    `;
+    document.body.appendChild(banner);
+
+    // Update the header to reflect local mode
+    const brentLbl = document.querySelector('.brent-lbl');
+    if(brentLbl) brentLbl.innerHTML = `⚠ Local file — live data unavailable<br>Host this file online to enable live refresh`;
+
+    // Update all tab timestamps
+    ['execTs','mapTs','chartsTs','newsTs'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.textContent = '⚠ Local file mode — live refresh unavailable. Host online to enable.';
+    });
+
+    // Update refresh button label to explain
+    const refreshBtn = document.getElementById('refreshAllBtn');
+    if(refreshBtn){
+      refreshBtn.textContent = '⚠ Host online to refresh';
+      refreshBtn.style.borderColor = 'rgba(232,160,48,0.4)';
+      refreshBtn.title = 'Live data requires hosting this file on a web server. See banner at bottom.';
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// CHARTS
+// ═══════════════════════════════════════════════════════════
+let chartsReady=false;
+const LBL=['Feb 27','Mar 1','Mar 3','Mar 5','Mar 7','Mar 9','Mar 11','Mar 13','Mar 15','Mar 17','Mar 19','Mar 21','Mar 24'];
+const BASE_OPT={responsive:true,maintainAspectRatio:false,animation:{duration:600},plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(8,10,14,0.96)',borderColor:'rgba(232,160,48,0.22)',borderWidth:1,titleColor:'#dde1ec',bodyColor:'#8a92a8'}},scales:{x:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6278',font:{family:'DM Mono',size:8}}},y:{grid:{color:'rgba(255,255,255,0.04)'},ticks:{color:'#5a6278',font:{family:'DM Mono',size:8}}}}};
+function mkLine(data,col,base){const s=[{data,borderColor:col,backgroundColor:col+'14',fill:true,tension:0.38,pointRadius:2,pointBackgroundColor:col,pointBorderColor:'#0a0c10',pointBorderWidth:1.5,borderWidth:2}];if(base!==undefined)s.push({data:Array(LBL.length).fill(base),borderColor:'rgba(90,98,120,0.4)',borderDash:[4,3],borderWidth:1,pointRadius:0,fill:false});return s;}
+function initCharts(){
+  if(chartsReady) return; chartsReady=true;
+  const o=(cb)=>({...BASE_OPT,scales:{...BASE_OPT.scales,y:{...BASE_OPT.scales.y,ticks:{...BASE_OPT.scales.y.ticks,callback:cb}}}});
+  new Chart('cOil',{type:'line',data:{labels:LBL,datasets:mkLine([73,78,88,98,108,114,119,115,112,116,119,117,119],'#f04040',73)},options:o(v=>'$'+v)});
+  new Chart('cGas',{type:'line',data:{labels:LBL,datasets:mkLine([33,38,44,50,55,60,65,62,60,61,63,62,62],'#e87030',33)},options:o(v=>'€'+v)});
+  new Chart('cBarley',{type:'line',data:{labels:LBL,datasets:mkLine([240,248,258,270,282,295,308,312,315,318,320,318,320],'#e8a030',240)},options:o(v=>'$'+v)});
+  new Chart('cWheat',{type:'line',data:{labels:LBL,datasets:mkLine([5.4,5.7,6.1,6.5,6.9,7.2,7.5,7.6,7.7,7.75,7.8,7.7,7.8],'#d4a020',5.4)},options:o(v=>'$'+v.toFixed(1))});
+  new Chart('cAlum',{type:'line',data:{labels:LBL,datasets:mkLine([2200,2260,2320,2400,2460,2510,2560,2580,2600,2620,2640,2645,2650],'#4a9eff',2200)},options:o(v=>v>=1000?(v/1000).toFixed(1)+'k':v)});
+  new Chart('cUrea',{type:'line',data:{labels:LBL,datasets:mkLine([440,460,480,505,525,545,565,572,578,582,586,588,590],'#3ab87a',440)},options:o(v=>'$'+v)});
+  new Chart('cComp',{type:'line',data:{labels:LBL,datasets:[
+    {label:'Oil',data:[100,107,121,134,148,156,163,158,153,159,163,160,163],borderColor:'#f04040',backgroundColor:'rgba(240,64,64,0.04)',fill:true,tension:0.35,pointRadius:1.5,borderWidth:2},
+    {label:'Gas',data:[100,115,133,152,167,182,197,188,182,185,191,188,188],borderColor:'#e87030',backgroundColor:'rgba(232,112,48,0.04)',fill:false,tension:0.35,pointRadius:1.5,borderWidth:2},
+    {label:'Barley',data:[100,103,108,113,118,123,128,130,131,133,133,133,133],borderColor:'#e8a030',backgroundColor:'rgba(232,160,48,0.04)',fill:false,tension:0.35,pointRadius:1.5,borderWidth:2},
+    {label:'Aluminum',data:[100,103,105,109,112,114,116,117,118,119,120,120,120],borderColor:'#4a9eff',backgroundColor:'rgba(74,158,255,0.04)',fill:false,tension:0.35,pointRadius:1.5,borderWidth:2},
+    {label:'Wheat',data:[100,106,113,120,128,133,139,141,143,144,144,143,144],borderColor:'#d4a020',backgroundColor:'rgba(212,160,32,0.04)',fill:false,tension:0.35,pointRadius:1.5,borderWidth:2},
+    {data:Array(LBL.length).fill(100),borderColor:'rgba(90,98,120,0.35)',borderDash:[5,4],borderWidth:1,pointRadius:0,fill:false,label:'Baseline'},
+  ]},options:{...BASE_OPT,plugins:{...BASE_OPT.plugins,legend:{display:true,labels:{color:'#5a6278',font:{family:'DM Mono',size:8},boxWidth:16,padding:10}}},scales:{...BASE_OPT.scales,y:{...BASE_OPT.scales.y,ticks:{...BASE_OPT.scales.y.ticks,callback:v=>v}}}}});
+}
+function refreshCharts(){
+  const ts=document.getElementById('chartsTs');
+  ts.textContent='Refreshed: '+new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})+' ET';
+}
+
+// ═══════════════════════════════════════════════════════════
+// NEWS — Rolling 7-day log. On each refresh:
+//   1. Fetch new live articles from the web
+//   2. Merge with existing stored articles (dedup by headline)
+//   3. Drop only articles older than 7 days
+//   4. Never remove articles within the 7-day window
+// ═══════════════════════════════════════════════════════════
+const NEWS_KEY='abi_me_news_v9';
+const NEWS_ROLLING_KEY='abi_me_news_rolling'; // persistent rolling store
+
+// Parse a publishDate string into a JS Date for age comparison
+function parsePubDate(str){
+  if(!str) return null;
+  try{ return new Date(str); }catch(e){ return null; }
+}
+
+// Deduplicate articles by normalised headline (lowercase, strip punctuation)
+function normHeadline(h){ return (h||'').toLowerCase().replace(/[^a-z0-9 ]/g,'').replace(/\s+/g,' ').trim(); }
+
+// Merge incoming articles into the rolling store, dedup + prune >7 days
+function mergeIntoRolling(incoming){
+  const SEVEN_DAYS=7*24*60*60*1000;
+  const cutoff=Date.now()-SEVEN_DAYS;
+
+  // Load existing rolling store
+  let existing=[];
+  try{
+    const stored=localStorage.getItem(NEWS_ROLLING_KEY);
+    if(stored) existing=JSON.parse(stored);
+  }catch(e){}
+
+  // Build dedupe map from existing articles (headline → article)
+  const seen=new Map();
+  existing.forEach(a=>seen.set(normHeadline(a.headline),a));
+
+  // Add new incoming articles — only if not already present
+  let addedCount=0;
+  incoming.forEach(a=>{
+    const key=normHeadline(a.headline);
+    if(!seen.has(key)){
+      // Stamp with fetchedAt if no publishDate
+      if(!a.fetchedAt) a.fetchedAt=Date.now();
+      seen.set(key,a);
+      addedCount++;
+    }
+  });
+
+  // Prune articles older than 7 days — using publishDate or fetchedAt
+  const pruned=[...seen.values()].filter(a=>{
+    const pd=parsePubDate(a.publishDate);
+    const age=pd ? pd.getTime() : (a.fetchedAt||Date.now());
+    return age >= cutoff;
+  });
+
+  // Sort: most recent first (by publishDate, then fetchedAt)
+  pruned.sort((a,b)=>{
+    const ta=parsePubDate(a.publishDate)?.getTime()||a.fetchedAt||0;
+    const tb=parsePubDate(b.publishDate)?.getTime()||b.fetchedAt||0;
+    return tb-ta;
+  });
+
+  // Save back
+  try{ localStorage.setItem(NEWS_ROLLING_KEY,JSON.stringify(pruned)); }catch(e){}
+
+  return { articles:pruned, added:addedCount };
+}
+
+async function refreshNews(force){
+  // Only use cache on passive tab-switch (force=false)
+  if(!force){
+    try{
+      const stored=localStorage.getItem(NEWS_ROLLING_KEY);
+      if(stored){
+        const articles=JSON.parse(stored);
+        if(articles&&articles.length>0){
+          renderNews(articles);
+          updateNewsTimestamp(articles,0,false);
+          return;
+        }
+      }
+    }catch(e){}
+  }
+
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const todayShort=today.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  // Show existing articles while fetching new ones (don't blank the screen)
+  let existingArticles=[];
+  try{
+    const stored=localStorage.getItem(NEWS_ROLLING_KEY);
+    if(stored) existingArticles=JSON.parse(stored);
+  }catch(e){}
+
+  if(existingArticles.length>0){
+    renderNews(existingArticles);
+    document.getElementById('newsTs').textContent=`⟳ Fetching latest articles — rolling feed updating...`;
+  } else {
+    document.getElementById('newsContainer').innerHTML=`<div class="news-loading"><span class="sp"></span>Building rolling feed — searching live web for ME crisis articles from the past 7 days...</div>`;
+    document.getElementById('newsTs').textContent=`Searching live web as of ${todayShort}...`;
+  }
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:4000,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      system:`You are a senior crisis intelligence analyst for ABInBev (ABI). Today is ${todayStr}. The Iran/US/Israel war began on February 28, 2026 and is ongoing.
+
+YOUR TASK: Search the live web and return ONLY real articles published in the LAST 7 DAYS (from ${todayStr} going back 7 days). Focus heavily on the most recent 48 hours for breaking developments.
+
+═══ HARD RULES — VIOLATIONS WILL MISLEAD A CEO ═══
+1. DATE WINDOW: Articles must be published within the last 7 days of ${todayStr}. Anything older = REJECTED.
+2. CAUSATION: Every article MUST be directly caused by the Middle East conflict / Iran war / Strait of Hormuz closure. Ask: "Would this story exist without the Iran war?" If YES → REJECT IT.
+3. NO EVERGREEN CONTENT: Do not include generic beer industry, commodity, or economic articles that are not specifically about the ME crisis impact.
+4. COMPETITOR NEWS: Only include if article explicitly discusses ME war impact on that company. General earnings = REJECTED.
+5. REAL URLs ONLY: Use real URLs from search results. Empty string if not found — never fabricate.
+
+═══ RUN THESE 5 SEARCHES — PRIORITISE RECENCY ═══
+SEARCH 1 (breaking, last 48h): "Iran war Middle East ${todayStr}" AND "Hormuz ceasefire oil latest news"
+SEARCH 2 (ABI Asian markets, last 7 days): "Philippines India South Korea energy emergency Iran war March 2026"
+SEARCH 3 (beer/CPG supply chain, last 7 days): "beer barley aluminum glass Iran war Middle East supply chain 2026"
+SEARCH 4 (ABI LatAm + Europe, last 7 days): "Brazil Mexico Colombia peso real Iran war economy 2026" AND "Europe gas LNG beer energy Iran war 2026"
+SEARCH 5 (competitors + ABI, last 7 days): "Heineken Carlsberg ABInBev Middle East Iran war impact 2026"
+
+═══ OUTPUT FORMAT ═══
+Return ONLY valid JSON, no markdown, no backticks, no preamble:
+{"articles":[{
+  "headline":"Full verbatim headline from the actual article",
+  "source":"Publisher Name",
+  "url":"https://actual-url-from-search-results-or-empty-string",
+  "tag":"SUPPLY CHAIN|COMMODITY|SHIPPING|OIL & GAS|DIPLOMACY|BEER INDUSTRY|MARKETS|GOVERNMENT|COMPETITOR",
+  "impact":"HIGH|MEDIUM",
+  "snippet":"2-3 sentences. MUST explicitly state the causal link to the ME/Iran crisis.",
+  "abiRelevance":"Specific ABI exposure: which market, input cost, or financial risk",
+  "market":"Primary ABI market, e.g. Philippines / Brazil / Europe / Global",
+  "publishDate":"Month Day, Year — exact publication date from the article"
+}]}
+
+Return 10-12 articles. Most recent first.`,
+      messages:[{role:'user',content:`Today is ${todayStr}. Search all 5 topics. Return 10-12 articles from the LAST 7 DAYS as JSON. Every article must: (a) be published in the last 7 days, (b) be directly caused by the Iran/ME war, (c) have a real URL. Sort most recent first.`}]
+    })});
+
+    const data=await resp.json();
+    const text=data.content.map(b=>b.type==='text'?b.text:'').join('');
+
+    let parsed;
+    try{
+      const jsonMatch=text.match(/\{[\s\S]*"articles"\s*:\s*\[[\s\S]*\]\s*\}/);
+      parsed=JSON.parse(jsonMatch?jsonMatch[0]:text.replace(/```json[\s\S]*?```|```/g,'').trim());
+    }catch(e){ parsed={articles:[]}; }
+
+    // Client-side date filter — reject anything pre-crisis or before 2026
+    const raw=parsed.articles||[];
+    const filtered=raw.filter(a=>{
+      if(!a.headline||!a.source) return false;
+      const check=(a.source+' '+(a.publishDate||'')).toLowerCase();
+      if(/\b(201[0-9]|202[0-5])\b/.test(check)) return false;
+      if(/\b(january|february)\s+2026\b/.test(check)) return false;
+      return true;
+    });
+
+    const isLive=filtered.length>=4;
+
+    if(isLive){
+      // Merge into rolling 7-day store
+      const {articles:merged, added}=mergeIntoRolling(filtered);
+      renderNews(merged);
+      rebuildTicker(merged);
+      updateNewsTimestamp(merged, added, true);
+    } else {
+      // Live fetch didn't return enough — merge static into rolling and show that
+      const {articles:merged, added}=mergeIntoRolling(staticNews());
+      renderNews(merged);
+      rebuildTicker(merged);
+      updateNewsTimestamp(merged, 0, false);
+    }
+
+  }catch(e){
+    // On error, show whatever is in the rolling store, or static fallback
+    let fallback=[];
+    try{ const s=localStorage.getItem(NEWS_ROLLING_KEY); if(s) fallback=JSON.parse(s); }catch(ex){}
+    if(fallback.length===0){ const {articles}=mergeIntoRolling(staticNews()); fallback=articles; }
+    renderNews(fallback);
+    const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('newsTs').textContent=`🔴 Live fetch failed — showing rolling store · ${now} ET`;
+  }
+}
+
+function updateNewsTimestamp(articles, added, isLive){
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const total=articles.length;
+  const indicator=isLive?'🟢 Live':'🟡 Rolling store';
+  const addedNote=isLive?(added>0?` · +${added} new`:''):'';
+  document.getElementById('newsTs').textContent=`${indicator} · ${total} articles · 7-day rolling feed${addedNote} · refreshed ${now} ET`;
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// EXEC refresh (flash news + forecasts)
+// ═══════════════════════════════════════════════════════════
+const EXEC_KEY='abi_me_exec_v5', EXEC_TTL=4*60*60*1000;
+async function refreshExec(force){
+  const btn=document.querySelector('.tab-refresh-btn');
+  const flashEl=document.getElementById('flashNews');
+  if(!force){
+    try{const c=localStorage.getItem(EXEC_KEY);if(c){const{ts,items}=JSON.parse(c);if(Date.now()-ts<EXEC_TTL){renderFlash(items);return;}}}catch(e){}
+  }
+  flashEl.innerHTML='<div class="exec-loading"><span class="sp"></span>Fetching latest intelligence...</div>';
+
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const todayShort=today.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:1200,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      system:`You are a crisis analyst. Today is ${todayStr}. Search for the latest breaking news TODAY and the past 48 hours about: US-Israel-Iran conflict, ceasefire negotiations, Trump announcements, military developments, Hormuz status. Only include news from the last 48 hours. Return ONLY valid JSON: {"items":[{"badge":"BREAKING|UPDATE|INTELLIGENCE","badgeStyle":"red|amber|blue","headline":"...","meta":"Source · Date"}]}`,
+      messages:[{role:'user',content:`Search for latest news as of ${todayStr}: Trump Iran ceasefire talks, US Israel military strikes Iran, Strait of Hormuz status today, Iran response. Return JSON 6 items from the last 48 hours only.`}]
+    })});
+    const data=await resp.json();
+    const text=data.content.map(b=>b.type==='text'?b.text:'').join('');
+    let parsed;try{parsed=JSON.parse(text.replace(/```json|```/g,'').trim());}catch(e){parsed={items:staticFlash()};}
+    const items=parsed.items||staticFlash();
+    try{localStorage.setItem(EXEC_KEY,JSON.stringify({ts:Date.now(),items}));}catch(e){}
+    renderFlash(items);
+    const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('flashTs').textContent=`Updated: ${now} ET · ${todayShort}`;
+    document.getElementById('execTs').textContent=`Last updated: ${now} ET`;
+  }catch(e){renderFlash(staticFlash());}
+}
+
+function renderFlash(items){
+  const colorMap={red:'flash-red',amber:'flash-amber',blue:'flash-blue'};
+  document.getElementById('flashNews').innerHTML=items.map(i=>`
+    <div class="flash-item">
+      <span class="flash-badge ${colorMap[i.badgeStyle]||'flash-amber'}">${i.badge}</span>
+      <div class="flash-body"><div class="flash-headline">${i.headline}</div><div class="flash-meta">${i.meta}</div></div>
+    </div>`).join('');
+}
+
+function staticFlash(){return[
+  {badge:'Breaking',badgeStyle:'red',headline:'Trump announces 5-day pause on strikes against Iranian energy sites, citing "productive conversations"',meta:'CNN · Mar 23, 2026 · Day 24'},
+  {badge:'Breaking',badgeStyle:'red',headline:"Iran denies any negotiations with Washington — dismisses Trump's pause announcement as attempt to lower energy prices",meta:'Al Jazeera · Mar 23, 2026'},
+  {badge:'Update',badgeStyle:'amber',headline:'Israeli Air Force continues strikes on Tehran — IRGC HQ, missile launch pads targeted; operations ongoing Mar 24',meta:'IDF / Reuters · Mar 24, 2026 · Day 25'},
+  {badge:'Update',badgeStyle:'amber',headline:'UK PM Starmer calls emergency economic meeting; sends short-range air defence systems to Middle East',meta:'BBC / Al Jazeera · Mar 23, 2026'},
+  {badge:'Intelligence',badgeStyle:'blue',headline:'Iran missile attacks down 90% from early days of war per US military; CENTCOM: 8,000+ Iranian targets hit since Feb 28',meta:'NPR / Pentagon · Mar 21, 2026'},
+  {badge:'Intelligence',badgeStyle:'blue',headline:'Trump signals "winding down" military efforts — says US "getting very close to meeting objectives" in Iran',meta:'Truth Social / NPR · Mar 21, 2026'},
+];}
+
+// ═══════════════════════════════════════════════════════════
+// LIVE DATA — fetch current FX rates + commodity prices
+// ═══════════════════════════════════════════════════════════
+const MARKET_KEY='abi_me_markets_v1', MARKET_TTL=30*60*1000; // 30min cache
+
+// Pre-crisis baselines (fixed, Feb 27 2026)
+const BASELINES={
+  BRENT:73, TTF:33,
+  USDBRL:5.08, EURUSD:1.09, USDMXN:17.1, USDCOP:3890, USDINR:84.1,
+  BARLEY:240, WHEAT:5.40, ALUMINUM:2200, UREA:440
+};
+
+async function fetchLiveMarkets(force){
+  if(!force){
+    try{
+      const c=localStorage.getItem(MARKET_KEY);
+      if(c){const{ts,data}=JSON.parse(c); if(Date.now()-ts<MARKET_TTL) return data;}
+    }catch(e){}
+  }
+
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:1200,
+      tools:[{type:'web_search_20250305',name:'web_search'}],
+      system:`You are a financial data analyst. Today is ${todayStr}. Search for the CURRENT market prices for these specific instruments and return ONLY valid JSON — no markdown, no text, no explanation.
+Search 1: current Brent crude oil price AND EU TTF natural gas price today
+Search 2: current USD/BRL USD/MXN USD/COP USD/INR EUR/USD exchange rates today
+Search 3: current barley price wheat CBOT price aluminum LME price urea fertilizer price
+
+Return this exact JSON structure with your best current values (use numbers only, no symbols):
+{"BRENT":119,"TTF":62,"USDBRL":5.92,"EURUSD":1.07,"USDMXN":18.4,"USDCOP":4180,"USDINR":86.5,"BARLEY":320,"WHEAT":7.8,"ALUMINUM":2650,"UREA":590,"asOf":"${todayStr}"}`,
+      messages:[{role:'user',content:`Search for all current prices as of ${todayStr} and return the JSON object.`}]
+    })});
+    const data=await resp.json();
+    const text=data.content.map(b=>b.type==='text'?b.text:'').join('');
+    const match=text.match(/\{[^{}]*"BRENT"[^{}]*\}/);
+    if(match){
+      const parsed=JSON.parse(match[0]);
+      try{localStorage.setItem(MARKET_KEY,JSON.stringify({ts:Date.now(),data:parsed}));}catch(e){}
+      return parsed;
+    }
+  }catch(e){}
+  return null; // signal that live fetch failed, keep existing values
+}
+
+function pct(current, base){ return ((current-base)/base*100).toFixed(1); }
+function fmtPct(val){ return val>0?`▲ +${val}%`:`▼ ${val}%`; }
+function pctColor(val){ return parseFloat(val)>0?'var(--red)':'var(--green)'; }
+
+function applyMarketData(m){
+  if(!m) return;
+
+  // ── Header FX chips ──────────────────────────────────────
+  const chips={
+    'USD/BRL': {val:m.USDBRL, base:BASELINES.USDBRL, el:'chip-brl'},
+    'EUR/USD': {val:m.EURUSD, base:BASELINES.EURUSD, el:'chip-eur', invert:true},
+    'USD/MXN': {val:m.USDMXN, base:BASELINES.USDMXN, el:'chip-mxn'},
+    'USD/COP': {val:m.USDCOP, base:BASELINES.USDCOP, el:'chip-cop'},
+    'USD/INR': {val:m.USDINR, base:BASELINES.USDINR, el:'chip-inr'},
+  };
+  Object.entries(chips).forEach(([pair,{val,base,el,invert}])=>{
+    const delta=pct(val,base);
+    // For EUR/USD, a lower rate = USD strengthening = bad for EUR
+    const displayDelta = invert ? (parseFloat(delta)*-1).toFixed(1) : delta;
+    const el2=document.getElementById(el);
+    if(el2){
+      el2.querySelector('.fx-chip-val').textContent=pair==='USD/COP'?val.toLocaleString():val;
+      const chgEl=el2.querySelector('.fx-chip-chg');
+      chgEl.textContent=`${parseFloat(delta)>0?'▲ +':'▼ '}${Math.abs(delta)}% since Feb 27`;
+      chgEl.style.color=invert?(parseFloat(delta)<0?'var(--red)':'var(--green)'):(parseFloat(delta)>0?'var(--red)':'var(--green)');
+    }
+  });
+  // Brent chip
+  const brentChip=document.getElementById('chip-brent');
+  if(brentChip){
+    const bd=pct(m.BRENT,BASELINES.BRENT);
+    brentChip.querySelector('.fx-chip-val').textContent='$'+m.BRENT;
+    brentChip.querySelector('.fx-chip-chg').textContent=`▲ +${bd}% since Feb 27`;
+  }
+
+  // ── Executive oil KPIs ───────────────────────────────────
+  const brentKpi=document.getElementById('kpi-brent');
+  if(brentKpi){
+    const bd=pct(m.BRENT,BASELINES.BRENT);
+    brentKpi.innerHTML=`~$${m.BRENT}<span class="oil-kpi-unit">/bbl</span>`;
+    document.getElementById('kpi-brent-chg').textContent=`▲ +${bd}% vs. pre-crisis`;
+  }
+  const ttfKpi=document.getElementById('kpi-ttf');
+  if(ttfKpi){
+    const td=pct(m.TTF,BASELINES.TTF);
+    ttfKpi.innerHTML=`~€${m.TTF}<span class="oil-kpi-unit">/MWh</span>`;
+    document.getElementById('kpi-ttf-chg').textContent=`▲ +${td}% vs. pre-crisis`;
+  }
+
+  // ── Charts tab FX cards ──────────────────────────────────
+  const chartFx=[
+    {id:'cfx-brl',val:m.USDBRL,base:BASELINES.USDBRL,pair:'USD/BRL'},
+    {id:'cfx-eur',val:m.EURUSD,base:BASELINES.EURUSD,pair:'EUR/USD',green:true},
+    {id:'cfx-mxn',val:m.USDMXN,base:BASELINES.USDMXN,pair:'USD/MXN'},
+    {id:'cfx-cop',val:m.USDCOP,base:BASELINES.USDCOP,pair:'USD/COP'},
+    {id:'cfx-inr',val:m.USDINR,base:BASELINES.USDINR,pair:'USD/INR'},
+  ];
+  chartFx.forEach(({id,val,base,pair,green})=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    const delta=pct(val,base);
+    const up=parseFloat(delta)>0;
+    el.querySelector('.fx-rate').textContent=(pair==='USD/COP'?'~'+val.toLocaleString():'~'+val);
+    el.querySelector('.fx-rate').style.color=green?'var(--green)':'var(--red)';
+    el.querySelector('.fx-delta-badge').textContent=`${up?'▲ +':'▼ '}${Math.abs(delta)}% since Feb 27`;
+    el.querySelector('.fx-delta-badge').className='fx-delta-badge '+(up&&!green||!up&&green?'fx-delta-red':'fx-delta-green');
+  });
+
+  // ── Chart badges ─────────────────────────────────────────
+  const badges={
+    'badge-oil':{val:m.BRENT,base:BASELINES.BRENT,pfx:''},
+    'badge-barley':{val:m.BARLEY,base:BASELINES.BARLEY,pfx:''},
+    'badge-wheat':{val:m.WHEAT,base:BASELINES.WHEAT,pfx:''},
+    'badge-alum':{val:m.ALUMINUM,base:BASELINES.ALUMINUM,pfx:''},
+    'badge-urea':{val:m.UREA,base:BASELINES.UREA,pfx:''},
+  };
+  Object.entries(badges).forEach(([id,{val,base}])=>{
+    const el=document.getElementById(id);
+    if(el){const d=pct(val,base); el.textContent=`▲ +${d}% vs Feb 27`;}
+  });
+
+  // ── Update chart last datapoint ──────────────────────────
+  // Push latest value onto each chart's dataset
+  const chartUpdates=[
+    {id:'cOil',val:m.BRENT},{id:'cGas',val:m.TTF},
+    {id:'cBarley',val:m.BARLEY},{id:'cWheat',val:m.WHEAT},
+    {id:'cAlum',val:m.ALUMINUM},{id:'cUrea',val:m.UREA},
+  ];
+  chartUpdates.forEach(({id,val})=>{
+    const chart=Chart.getChart(id);
+    if(chart){
+      // Replace last datapoint with live value
+      chart.data.datasets[0].data[chart.data.datasets[0].data.length-1]=val;
+      chart.update('none');
+    }
+  });
+
+  // ── Header info bar ──────────────────────────────────────
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const todayShort=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  document.querySelector('.brent-lbl').innerHTML=`Brent $${m.BRENT}/bbl · TTF €${m.TTF}/MWh · Sources: IEA · EIA<br>Live market data · ${todayShort} · ${now} ET`;
+  document.getElementById('chartsTs').textContent=`Live market data · ${todayShort} · ${now} ET`;
+}
+
+function updateDayCounter(){
+  const start=new Date('2026-02-28');
+  const today=new Date();
+  const days=Math.max(1, Math.floor((today-start)/(1000*60*60*24))+1);
+  const dayEl=document.getElementById('dayCount');
+  if(dayEl) dayEl.textContent=days;
+  const datesEl=document.querySelector('.exec-dates');
+  if(datesEl){
+    const todayStr=today.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    datesEl.textContent=`Started Feb 28, 2026 · Today ${todayStr}`;
+  }
+  const progLbl=document.querySelector('.progress-lbl span:nth-child(2)');
+  if(progLbl) progLbl.textContent=`Today (Day ${days})`;
+  // Update progress fill width (scale: 90 days = 100%)
+  const fill=document.querySelector('.progress-fill');
+  if(fill) fill.style.width=Math.min(98,Math.round(days/90*100))+'%';
+}
+
+// ═══════════════════════════════════════════════════════════
+// GOD REFRESH — updates every live element in the tracker
+// ═══════════════════════════════════════════════════════════
+async function refreshAll(){
+  const btn=document.getElementById('refreshAllBtn');
+
+  // Block if running locally — browser CORS will reject all API calls
+  if(window.location.protocol === 'file:'){
+    alert('⚠ Live refresh is not available when the file is opened locally.\n\nTo enable:\n1. Upload this file to SharePoint, Google Drive, or GitHub Pages\n2. Open from that URL\n3. Refresh All will work fully from there\n\nThe file itself is complete — it just needs to be hosted online.');
+    return;
+  }
+
+  btn.textContent='⟳ Refreshing all data...'; btn.disabled=true;
+
+  // Show loading state in header
+  const brentLbl=document.querySelector('.brent-lbl');
+  brentLbl.innerHTML='<span style="color:var(--accent)">⟳ Fetching live data...</span>';
+
+  // Clear caches so everything fetches fresh
+  try{
+    localStorage.removeItem(NEWS_KEY);
+    localStorage.removeItem(EXEC_KEY);
+    localStorage.removeItem(MARKET_KEY);
+  }catch(e){}
+
+  // Always update day counter immediately — no API needed
+  updateDayCounter();
+
+  // Run all live fetches in parallel
+  const [markets]=await Promise.all([
+    fetchLiveMarkets(true),
+    refreshExec(true),
+    refreshNews(true),
+  ]);
+
+  // Apply market data to every element across all tabs
+  applyMarketData(markets);
+
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const todayShort=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+  btn.textContent='⟳ Refresh All'; btn.disabled=false;
+
+  // Update all per-tab timestamps
+  ['execTs','mapTs','chartsTs'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.textContent=`All data refreshed · ${todayShort} · ${now} ET`;
+  });
+}
+
+function refreshCharts(){
+  // Charts refresh is now handled by refreshAll → applyMarketData
+  // This stub kept for backward compat with tab-level refresh button
+  updateDayCounter();
+  const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  const el=document.getElementById('chartsTs');
+  if(el) el.textContent=`Refreshed: ${now} ET`;
+}
+
+function rebuildTicker(articles){
+  const tagMap={'SUPPLY CHAIN':'tag-ind','COMMODITY':'tag-mkt','SHIPPING':'tag-brk','OIL & GAS':'tag-mkt','DIPLOMACY':'tag-brk','BEER INDUSTRY':'tag-ind','MARKETS':'tag-mkt','GOVERNMENT':'tag-brk','COMPETITOR':'tag-ind'};
+  const items=[...articles,...articles].map(a=>`<div class="ti"><span class="ti-tag ${tagMap[a.tag]||'tag-mkt'}">${a.tag}</span>${a.headline} · ${a.source}</div>`).join('');
+  document.getElementById('tickerInner').innerHTML=items;
+}
+
+function clearRollingFeed(){
+  if(!confirm('Clear the 7-day rolling news feed? This will remove all stored articles.')) return;
+  try{ localStorage.removeItem(NEWS_ROLLING_KEY); localStorage.removeItem(NEWS_KEY); }catch(e){}
+  document.getElementById('newsContainer').innerHTML='<div class="news-loading">Rolling feed cleared. Click ⟳ Refresh All or ⟳ Refresh News to reload.</div>';
+  document.getElementById('newsTs').textContent='Feed cleared — press ⟳ Refresh All to reload';
+}
+
+const NC_TS={'SUPPLY CHAIN':'background:rgba(240,64,64,0.12);color:#f04040;border:1px solid rgba(240,64,64,0.18)','COMMODITY':'background:rgba(232,160,48,0.12);color:#e8a030;border:1px solid rgba(232,160,48,0.18)','SHIPPING':'background:rgba(74,158,255,0.12);color:#4a9eff;border:1px solid rgba(74,158,255,0.18)','OIL & GAS':'background:rgba(240,64,64,0.12);color:#f04040;border:1px solid rgba(240,64,64,0.18)','DIPLOMACY':'background:rgba(90,108,200,0.12);color:#8090e8;border:1px solid rgba(90,108,200,0.18)','MARKETS':'background:rgba(58,184,122,0.12);color:#3ab87a;border:1px solid rgba(58,184,122,0.18)','BEER INDUSTRY':'background:rgba(200,150,50,0.12);color:#c89632;border:1px solid rgba(200,150,50,0.18)','CONSUMER':'background:rgba(232,160,48,0.12);color:#e8a030;border:1px solid rgba(232,160,48,0.18)','GOVERNMENT':'background:rgba(150,80,200,0.12);color:#c090f0;border:1px solid rgba(150,80,200,0.18)','COMPETITOR':'background:rgba(58,184,122,0.12);color:#3ab87a;border:1px solid rgba(58,184,122,0.18)'};
+function renderNews(articles){
+  const html=`<div class="news-grid">${articles.map(a=>{
+    const s=NC_TS[a.tag]||NC_TS['COMMODITY'];
+    const mkt=a.market?`<span style="font-family:'DM Mono',monospace;font-size:7px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:var(--muted);padding:1px 5px;border-radius:2px;">${a.market}</span>`:'';
+    const twoHoursAgo=Date.now()-(2*60*60*1000);
+    const isNew=(a.fetchedAt&&a.fetchedAt>twoHoursAgo);
+    const newBadge=isNew?`<span style="font-family:'DM Mono',monospace;font-size:7px;background:rgba(240,64,64,0.15);border:1px solid rgba(240,64,64,0.3);color:var(--red);padding:1px 5px;border-radius:2px;font-weight:700;animation:pulse 2s infinite;">NEW</span>`:'';
+    const dateBadge=a.publishDate
+      ? `<span style="font-family:'DM Mono',monospace;font-size:7px;background:rgba(58,184,122,0.08);border:1px solid rgba(58,184,122,0.18);color:#3ab87a;padding:1px 5px;border-radius:2px;">📅 ${a.publishDate}</span>`
+      : '';
+    const srcLink = a.url && a.url.startsWith('http')
+      ? `<a href="${a.url}" target="_blank" rel="noopener" style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);text-decoration:none;display:inline-flex;align-items:center;gap:3px;margin-top:3px;padding:2px 5px;border:1px solid var(--border2);border-radius:3px;transition:color 0.15s,border-color 0.15s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='rgba(232,160,48,0.3)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border2)'">${a.source} ↗</a>`
+      : `<span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);display:inline-block;margin-top:3px;">${a.source}</span>`;
+    return`<div class="news-card">
+      <div style="display:flex;align-items:center;gap:4px;margin-bottom:6px;flex-wrap:wrap;">
+        <span class="nc-tag" style="${s};margin-bottom:0">${a.tag}</span>${mkt}${dateBadge}${newBadge}
+        <span class="nc-imp ${a.impact==='HIGH'?'nc-h':'nc-m'}" style="position:static;margin-left:auto">${a.impact}</span>
+      </div>
+      <div class="nc-hl">${a.headline}</div>
+      ${srcLink}
+      <div class="nc-snip">${a.snippet}</div>
+      <div class="nc-abi"><span class="nc-abi-lbl">ABI EXPOSURE: </span><span class="nc-abi-txt">${a.abiRelevance}</span></div>
+    </div>`;
+  }).join('')}</div>`;
+  document.getElementById('newsContainer').innerHTML=html;
+}
+function staticNews(){return[
+  {headline:"Philippines Declares 'National Energy Emergency' — Marcos Cites Iran War as 'Imminent Danger' to Fuel Supplies",source:"Philippine Star / Reuters · Mar 24, 2026",url:"https://www.reuters.com/world/india/brewers-india-warn-shortages-iran-war-hits-glass-bottle-can-makers-2026-03-24/",tag:"GOVERNMENT",impact:"HIGH",market:"Philippines",publishDate:"Mar 24, 2026",snippet:"Philippine President Ferdinand Marcos Jr declared a national energy emergency, explicitly citing the Iran war as the cause. 'A state of national energy emergency is hereby declared in light of the ongoing conflict in the Middle East, and the resulting imminent danger posed upon the availability and stability of the country's energy supply,' he said.",abiRelevance:"Philippines is a CRITICAL ABI market with no alternative oil supply — energy emergency signals imminent consumer spending collapse, distribution cost surge, and potential government rationing"},
+  {headline:"India Brewers Warn of Glass Bottle & Can Shortages — ABInBev, Heineken, Carlsberg All Impacted by Iran War",source:"Reuters · Mar 24, 2026",url:"https://www.reuters.com/world/india/brewers-india-warn-shortages-iran-war-hits-glass-bottle-can-makers-2026-03-24/",tag:"SUPPLY CHAIN",impact:"HIGH",market:"India",publishDate:"Mar 24, 2026",snippet:"Indian brewers including ABInBev, Heineken and Carlsberg are raising alarms about imminent shortages of glass bottles and aluminum cans as the Middle East conflict disrupts raw material supply chains. India's glass bottle manufacturers are facing energy cost surges of 40%+ as Gulf LNG supply collapses following Hormuz closure.",abiRelevance:"ABI India is a key growth market — bottle/can supply crunch combined with 40%+ energy costs could force production cuts and volume losses in Q2–Q3 2026"},
+  {headline:"Strait of Hormuz Remains Closed — 3,000+ Vessels Stranded; Commercial Transit Unlikely Rest of 2026",source:"Lloyd's List / IMO · Mar 24, 2026",url:"https://newlandchase.com/middle-east-crisis-situation-update/",tag:"SHIPPING",impact:"HIGH",market:"Global",publishDate:"Mar 24, 2026",snippet:"Over 3,000 vessels remain stranded near the Middle East as Hormuz traffic halts following Iran's Feb 28 closure. Shipping analysts assess commercial transit through Hormuz is unlikely to resume for the remainder of 2026. All five major shipping lines have suspended reefer container bookings to UAE, Iraq, Kuwait, Qatar and Bahrain.",abiRelevance:"ABI raw material imports and finished goods exports between Europe, Asia and Americas face major freight cost surge and 14+ day delays across all supply chains"},
+  {headline:"Brent Crude Holds Near $119 After Trump's 5-Day Strike Pause — Still Up 63% Since Feb 27",source:"Reuters / Bloomberg · Mar 24, 2026",url:"https://www.reuters.com",tag:"OIL & GAS",impact:"HIGH",market:"Global",publishDate:"Mar 24, 2026",snippet:"Brent crude fell ~15% on Trump's Iran pause announcement before partially recovering to ~$119/bbl — still 63% above pre-conflict levels. The US temporarily lifted sanctions on some Iranian oil to release ~140M barrels. Iran denied any negotiations, calling the announcement an attempt to lower energy prices.",abiRelevance:"Oil price directly impacts ABI energy costs, aluminum/glass packaging and agricultural inputs — every $10/bbl = ~$150M annual ABI COGS impact"},
+  {headline:"Barley Up 33%, Wheat +44% — Hormuz Closure Cuts Global Fertilizer Supply by a Third",source:"Vesper Agricultural Markets · Mar 14, 2026",url:"https://vespertool.com/news/how-the-middle-east-conflict-is-moving-commodity-markets/",tag:"COMMODITY",impact:"HIGH",market:"Global",publishDate:"Mar 14, 2026",snippet:"Barley prices have surged 33% and wheat 44% since the Feb 28 Hormuz closure cut off one-third of global fertilizer exports. Australian wheat acreage is expected to drop 15% due to fertilizer costs. Malt costs are expected to follow barley higher with a 4–6 week lag.",abiRelevance:"Barley is ABI's #1 raw material globally. A 33%+ cost increase directly compresses gross margins at every brewery worldwide with limited short-term hedging options"},
+  {headline:"South Korea Convenes Emergency Energy Cabinet — Releases Strategic Petroleum Reserves as Crisis Deepens",source:"Yonhap / Korea Herald · Mar 18, 2026",url:"https://www.koreaherald.com",tag:"GOVERNMENT",impact:"HIGH",market:"South Korea",publishDate:"Mar 18, 2026",snippet:"South Korea's government convened an emergency cabinet meeting and released strategic petroleum reserves as the country faces its worst energy security crisis since the 1970s oil embargo. South Korea imports ~90% of its crude through Hormuz. Consumer fuel prices surged 40% in three weeks following Feb 28.",abiRelevance:"South Korea is a CRITICAL ABI market — emergency declaration and 40% fuel price spike signals severe consumer spending headwinds for ABI's Korean beer operations"},
+  {headline:"Brazilian Real Hits 5.92 as Oil Shock Drives LatAm EM Selloff — Central Bank Intervenes",source:"Bloomberg / Valor Econômico · Mar 20, 2026",url:"https://www.bloomberg.com",tag:"MARKETS",impact:"HIGH",market:"Brazil",publishDate:"Mar 20, 2026",snippet:"The Brazilian Real weakened to 5.92 vs USD as oil price shock from the Iran war drives risk-off sentiment in emerging markets. Brazil's central bank conducted FX intervention but failed to stem the slide. Gulf urea imports (35% of Brazil's supply) are severely disrupted, adding agricultural cost pressure.",abiRelevance:"Brazil is ABI's #1 revenue market — at 5.92, BRL weakness materially compresses USD-reported group earnings; every 0.10 BRL move = ~$200M annual revenue impact"},
+  {headline:"EU TTF Gas Hits €62 — European Glass & Aluminum Makers Impose 30% Energy Surcharges Due to ME Crisis",source:"FT / Energy Intelligence · Mar 19, 2026",url:"https://www.ft.com",tag:"OIL & GAS",impact:"HIGH",market:"Europe",publishDate:"Mar 19, 2026",snippet:"Dutch TTF natural gas has nearly doubled from pre-conflict levels as QatarEnergy's LNG hub remains offline following ME war attacks. European glass manufacturers across Belgium, Germany, Italy and Czech Republic imposed energy surcharges of up to 30%. ECB postponed rate cuts on March 19 due to inflation risk.",abiRelevance:"ABI Europe (Stella Artois, Beck's, Pilsner Urquell) faces dual cost pressure — glass packaging +30% and brewery energy costs surging across all European operations"},
+  {headline:"Aluminum Surges 20% Since Iran War — Ball and Crown Holdings Signal Packaging Price Hikes to CPG Sector",source:"Financial Times · Mar 12, 2026",url:"https://www.ft.com",tag:"COMMODITY",impact:"HIGH",market:"Global",publishDate:"Mar 12, 2026",snippet:"Aluminum prices surged ~20% since the Feb 28 Hormuz closure as energy-intensive smelting operations face massive cost increases from surging natural gas prices. Major can manufacturers Ball and Crown Holdings have formally notified CPG customers of upcoming price hike negotiations.",abiRelevance:"Aluminum cans are ABI's primary packaging in the Americas and Asia — 20% surge hits COGS across Bud Light, Michelob Ultra, Corona, and all major can-packaged brands globally"},
+  {headline:"Colombia Issues Energy Alert as Iran War Drives Peso to 4,180 — Government Eyes Fuel Price Controls",source:"El Tiempo / Reuters · Mar 15, 2026",url:"https://www.reuters.com",tag:"GOVERNMENT",impact:"MEDIUM",market:"Colombia",publishDate:"Mar 15, 2026",snippet:"Colombia's energy regulator issued a national energy alert as the peso weakened to 4,180 vs the USD on Iran war-driven oil shock. Domestic fuel prices surged and the government is considering emergency price controls. Consumer confidence indices dropped sharply in the first two weeks of March.",abiRelevance:"Colombia is a growing ABI market (Bavaria brand) — energy alert and consumer confidence drop signal near-term beer volume pressure; fuel price controls could distort distribution margins"},
+  {headline:"Trump Signals 'Winding Down' Military Efforts as Iran Missile Attacks Drop 90% — Ceasefire Watch",source:"NPR / Truth Social · Mar 21, 2026",url:"https://www.npr.org/2026/03/21/nx-s1-5755539/iran-war-fourth-week",tag:"DIPLOMACY",impact:"HIGH",market:"Global",publishDate:"Mar 21, 2026",snippet:"Trump wrote on Truth Social that the US was 'getting very close to meeting objectives' in Iran, suggesting a potential off-ramp. CENTCOM confirmed 8,000+ Iranian targets struck since Feb 28. Iranian missile attacks are down 90% from peak intensity in the early days of the conflict.",abiRelevance:"De-escalation signals support ABI base-case Q2 partial recovery planning — but no ceasefire framework exists yet; commodity and FX hedging decisions remain high-risk until confirmed"},
+  {headline:"Iran War Economic Impact Called 'Greatest Global Energy and Food Security Challenge in History' by IEA",source:"IEA / WEF · Mar 12, 2026",url:"https://www.weforum.org/stories/2026/03/the-global-price-tag-of-war-in-the-middle-east/",tag:"MARKETS",impact:"HIGH",market:"Global",publishDate:"Mar 12, 2026",snippet:"The International Energy Agency characterized the Iran war's impact as the 'greatest global energy and food security challenge in history,' echoing the 1970s energy crisis. The WEF warned the structural shock is 'radiating well beyond the Gulf, reshaping global commodity markets, food systems, industrial supply chains and geopolitical alignments.'",abiRelevance:"Macro-level crisis assessment validates ABI's exposure across every input category — energy, packaging, agricultural inputs and consumer purchasing power all under simultaneous pressure"},
+];}
+
+</script>
+</body>
+</html>
