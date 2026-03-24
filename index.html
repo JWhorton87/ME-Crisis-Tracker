@@ -87,11 +87,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .rank-name{font-size:10px;font-weight:600;}
 .rank-detail{font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-top:1px;line-height:1.4;}
 .rpill{font-family:'DM Mono',monospace;font-size:7px;font-weight:700;padding:2px 4px;border-radius:2px;text-transform:uppercase;letter-spacing:0.8px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.rp-src{background:rgba(58,120,212,0.2);color:#90b8f0;border:1px solid rgba(58,120,212,0.4);}
 .rp-crit{background:rgba(127,29,29,0.3);color:#fca5a5;border:1px solid rgba(127,29,29,0.5);}
 .rp-high{background:rgba(154,52,18,0.3);color:#fdba74;border:1px solid rgba(154,52,18,0.5);}
 .rp-mh{background:rgba(146,64,14,0.3);color:#fcd34d;border:1px solid rgba(146,64,14,0.5);}
 .rp-med{background:rgba(133,77,14,0.3);color:#fde68a;border:1px solid rgba(133,77,14,0.5);}
 .rp-gain{background:rgba(20,83,45,0.3);color:#6ee7b7;border:1px solid rgba(20,83,45,0.5);}
+.layer-btn:hover{background:rgba(232,160,48,0.08)!important;border-color:rgba(232,160,48,0.25)!important;color:var(--accent)!important;transition:all 0.15s;}
 .stat-bar{flex-shrink:0;display:grid;grid-template-columns:1fr 1fr;border-top:1px solid var(--border);background:var(--card2);}
 .stat-cell{padding:7px 9px;border-right:1px solid var(--border);border-bottom:1px solid var(--border);}
 .stat-cell:nth-child(2),.stat-cell:nth-child(4){border-right:none;}
@@ -424,8 +426,15 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <!-- ═══ MAP TAB ═══ (with sidebar) -->
   <div class="tab-content" id="tab-map" style="flex-direction:row;">
     <div style="flex:1;display:flex;flex-direction:column;overflow:hidden;">
-      <div class="tab-action-bar">
-        <span class="tab-timestamp" id="mapTs">Map · Use ⟳ Refresh All in the header to update all data</span>
+      <div class="tab-action-bar" style="flex-direction:column;align-items:flex-start;gap:6px;padding:8px 12px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+          <span style="font-family:'DM Mono',monospace;font-size:8px;color:var(--muted);margin-right:4px;">VIEW:</span>
+          <button class="layer-btn" data-layer="oil"  onclick="switchLayer('oil')"  style="background:rgba(232,160,48,0.15);border:1px solid rgba(232,160,48,0.5);color:var(--accent);font-family:'DM Mono',monospace;font-size:8px;padding:3px 10px;border-radius:3px;cursor:pointer;">🛢 Oil & Gas Risk</button>
+          <button class="layer-btn" data-layer="agri" onclick="switchLayer('agri')" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:var(--muted);font-family:'DM Mono',monospace;font-size:8px;padding:3px 10px;border-radius:3px;cursor:pointer;">🌾 Beer & Agriculture Risk</button>
+          <button class="layer-btn" data-layer="cons" onclick="switchLayer('cons')" style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:var(--muted);font-family:'DM Mono',monospace;font-size:8px;padding:3px 10px;border-radius:3px;cursor:pointer;">📉 Consumer & Inflation Risk</button>
+          <button class="layer-btn" data-layer="cpg"  onclick="switchLayer('cpg')"  style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);color:var(--muted);font-family:'DM Mono',monospace;font-size:8px;padding:3px 10px;border-radius:3px;cursor:pointer;">🌍 Total CPG Risk</button>
+        </div>
+        <span id="layerDesc" style="font-family:'DM Mono',monospace;font-size:7px;color:var(--muted);">Hormuz dependency · Energy import exposure · LNG disruption</span>
       </div>
       <div class="map-panel"><svg id="mapSvg"></svg></div>
       <div class="map-footer">BLUE = ME Producer / Conflict Source &nbsp;·&nbsp; RED = Supply disruption (critical→high→med-high→medium) &nbsp;·&nbsp; GREEN = Low risk / beneficiary &nbsp;·&nbsp; Hover countries for detail &nbsp;·&nbsp; ⊙ Strait of Hormuz</div>
@@ -443,6 +452,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         <div class="leg-item"><div class="leg-swatch" style="background:var(--c-low)"></div><div><div class="leg-label">Low / Benefits</div><div class="leg-sub">Insulated or gains</div></div></div>
         <div class="sb-div"></div>
         <div class="sb-title">Most Impacted Countries</div>
+        <div id="rankedList">
         <div class="rank-row"><div class="rank-num">1</div><div class="rank-info"><div class="rank-name">South Korea</div><div class="rank-detail">12% Hormuz flows — ~90% import dep.</div></div><div class="rpill rp-crit">Critical</div></div>
         <div class="rank-row"><div class="rank-num">2</div><div class="rank-info"><div class="rank-name">Japan</div><div class="rank-detail">10% flows — 60.8% fossil · 150d reserve</div></div><div class="rpill rp-crit">Critical</div></div>
         <div class="rank-row"><div class="rank-num">3</div><div class="rank-info"><div class="rank-name">Taiwan / Singapore</div><div class="rank-detail">~9% flows — key refinery hub</div></div><div class="rpill rp-crit">Critical</div></div>
@@ -454,6 +464,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         <div class="rank-row"><div class="rank-num">9</div><div class="rank-info"><div class="rank-name">Poland / Greece / Lithuania</div><div class="rank-detail">42–52% crude from ME · EU exposed</div></div><div class="rpill rp-med">Medium</div></div>
         <div class="rank-row"><div class="rank-num">10</div><div class="rank-info"><div class="rank-name">UK / Germany / France / Italy</div><div class="rank-detail">>50% jet fuel · >20% diesel from Gulf</div></div><div class="rpill rp-med">Medium</div></div>
         <div class="rank-row"><div class="rank-num">✦</div><div class="rank-info"><div class="rank-name">USA / Canada / Norway</div><div class="rank-detail">Net exporters — benefit from surge</div></div><div class="rpill rp-gain">Gain</div></div>
+        </div>
       </div>
       <div class="stat-bar">
         <div class="stat-cell"><div class="stat-val">20M</div><div class="stat-lbl">bbl/day via Hormuz</div></div>
@@ -554,84 +565,242 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 <script>
 // ═══════════════════════════════════════════════════════════
-// COUNTRY DATA
+// COUNTRY DATA — 4 risk layers per country
+//   oil  = Oil & Gas Risk
+//   agri = Beer & Agriculture Risk
+//   cons = Consumer & Inflation Risk
+//   cpg  = Total CPG / Beer Risk (composite)
 // ═══════════════════════════════════════════════════════════
-const COUNTRIES = {
-  '364':{risk:'source',  name:'Iran',        s1:'Hormuz transit',   v1:'~20M bbl/day',    s2:'Conflict',        v2:'Active war zone',    s3:'Economy',         v3:'Freefall; infra destroyed'},
-  '682':{risk:'source',  name:'Saudi Arabia',s1:'Oil output',       v1:'~10M bbl/day',    s2:'Ras Tanura',      v2:'Refinery hit',       s3:'ABI exposure',    v3:'Largest MENA market'},
-  '368':{risk:'source',  name:'Iraq',        s1:'Oil exports',      v1:'~4M bbl/day',     s2:'Conflict',        v2:'US PMF strikes',     s3:'ABI market',      v3:'Fully disrupted'},
-  '784':{risk:'source',  name:'UAE',         s1:'Jebel Ali hub',    v1:'Serves 45-50M',   s2:'Fujairah port',   v2:'Attacked',           s3:'ABI distribution',v3:'Severely strained'},
-  '414':{risk:'source',  name:'Kuwait',      s1:'US Embassy',       v1:'Closed',          s2:'IRGC attacks',    v2:'Ongoing drones',     s3:'Beer/CPG dist.',  v3:'Shutdown'},
-  '634':{risk:'source',  name:'Qatar',       s1:'QatarEnergy LNG',  v1:'Halted',          s2:'Helium supply',   v2:'1/3 of global',      s3:'Al Udeid base',   v3:'Hit'},
-  '512':{risk:'source',  name:'Oman',        s1:'Sohar port',       v1:'Drone attack',    s2:'Hormuz passage',  v2:'Selective only',     s3:'ABI dist.',       v3:'Disrupted'},
-  '887':{risk:'source',  name:'Yemen',       s1:'Red Sea attacks',  v1:'Iran-linked',     s2:'Houthi stocks',   v2:'Running low',        s3:'Shipping lane',   v3:'High risk'},
-  '400':{risk:'source',  name:'Jordan',      s1:'Regional impact',  v1:'High',            s2:'Airspace',        v2:'Disrupted',          s3:'ABI exposure',    v3:'Moderate'},
-  '048':{risk:'source',  name:'Bahrain',     s1:'US 5th Fleet HQ',  v1:'At risk',         s2:'Missile attacks', v2:'Ongoing',            s3:'ABI dist.',       v3:'Disrupted'},
-  '422':{risk:'source',  name:'Lebanon',     s1:'Israeli strikes',  v1:'Ongoing',         s2:'Hezbollah',       v2:'Exchanges continuing',s3:'ABI market',     v3:'Shutdown'},
-  '376':{risk:'source',  name:'Israel',      s1:'Missile alerts',   v1:'Jerusalem/TA',    s2:'Casualties',      v2:'180+ in Dimona',     s3:'ABI operations',  v3:'Critically disrupted'},
-  '410':{risk:'critical',name:'South Korea', s1:'Hormuz flows',     v1:'12% of global',   s2:'Import dep.',     v2:'~90% crude',         s3:'Reserve',         v3:'150 days'},
-  '392':{risk:'critical',name:'Japan',       s1:'Hormuz flows',     v1:'10% of global',   s2:'Fossil dep.',     v2:'60.8%',              s3:'Reserve',         v3:'150 days'},
-  '158':{risk:'critical',name:'Taiwan',      s1:'Hormuz flows',     v1:'~9% of global',   s2:'Refinery role',   v2:'Key regional hub',   s3:'Semiconductor',   v3:'Helium disrupted'},
-  '702':{risk:'critical',name:'Singapore',   s1:'Refinery capacity',v1:'Key APAC hub',    s2:'Hormuz dep.',     v2:'~9% of flows',       s3:'ABI APAC hub',    v3:'Supply chain risk'},
-  '608':{risk:'critical',name:'Philippines', s1:'ME oil flows',     v1:'~14% of imports', s2:'Alternatives',    v2:'None available',     s3:'ABI market',      v3:'Severe consumer pressure'},
-  '764':{risk:'critical',name:'Thailand',    s1:'ME crude dep.',    v1:'High',            s2:'LNG imports',     v2:'Gulf-dependent',     s3:'ABI SE Asia',     v3:'Monitoring closely'},
-  '156':{risk:'high',    name:'China',       s1:'Hormuz flows',     v1:'37.7% of total',  s2:'ME crude dep.',   v2:'>50%',               s3:'Stocks',          v3:'Worst day in ~1yr'},
-  '356':{risk:'high',    name:'India',       s1:'Hormuz flows',     v1:'14.7% of total',  s2:'Rice at ports',   v2:'400K MT stuck',      s3:'ABI India',       v3:'Glass bottle shortage'},
-  '586':{risk:'high',    name:'Pakistan',    s1:'Gulf LNG dep.',    v1:'Critical',        s2:'LPG dependency',  v2:'Critical',           s3:'Consumer power',  v3:'Collapsing rapidly'},
-  '050':{risk:'high',    name:'Bangladesh',  s1:'Energy imports',   v1:'Gulf-dependent',  s2:'LNG supply',      v2:'Severely cut',       s3:'Food security',   v3:'At risk'},
-  '104':{risk:'high',    name:'Myanmar',     s1:'LNG imports',      v1:'Gulf-sourced',    s2:'Energy security', v2:'Severely stressed',  s3:'Consumer',        v3:'Acute pressure'},
-  '144':{risk:'high',    name:'Sri Lanka',   s1:'Oil imports',      v1:'80%+ Gulf',       s2:'Foreign reserves',v2:'Already depleted',   s3:'ABI market',      v3:'Consumer risk'},
-  '116':{risk:'high',    name:'Cambodia',    s1:'Energy imports',   v1:'Gulf-dependent',  s2:'LNG supply',      v2:'Disrupted',          s3:'Consumer',        v3:'Inflation risk'},
-  '704':{risk:'medhigh', name:'Vietnam',     s1:'Oil imports',      v1:'Partly Gulf',     s2:'Manufacturing',   v2:'Cost pressure',      s3:'ABI SE Asia',     v3:'Monitoring'},
-  '288':{risk:'medhigh', name:'Ghana',       s1:'Fuel imports',     v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Africa',      v3:'Exposure'},
-  '404':{risk:'medhigh', name:'Kenya',       s1:'Oil imports',      v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Africa',      v3:'Cost pressure'},
-  '800':{risk:'medhigh', name:'Uganda',      s1:'Fuel prices',      v1:'Rising sharply',  s2:'Food inflation',  v2:'Accelerating',       s3:'ABI Africa',      v3:'Exposure'},
-  '231':{risk:'medhigh', name:'Ethiopia',    s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',   v2:'At risk',            s3:'ABI Africa',      v3:'Exposure'},
-  '458':{risk:'medhigh', name:'Malaysia',    s1:'Net exporter',     v1:'Partial gain',    s2:'Palm oil demand', v2:'Rising (biofuel)',   s3:'ABI APAC',        v3:'Partially shielded'},
-  '792':{risk:'medium',  name:'Turkey',      s1:'Iran pipeline',    v1:'87% gas from Iran',s2:'Energy security',v2:'Severely stressed',  s3:'ABI Turkey',      v3:'Market at risk'},
-  '276':{risk:'medium',  name:'Germany',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Gas storage',     v2:'30% capacity',       s3:"ABI (Beck's)",    v3:'Energy surcharges +30%'},
-  '616':{risk:'medium',  name:'Poland',      s1:'ME crude dep.',    v1:'42–52%',          s2:'Rate cuts',       v2:'Paused',             s3:'ABI E. Europe',   v3:'Consumer pressure'},
-  '300':{risk:'medium',  name:'Greece',      s1:'ME crude dep.',    v1:'42–52%',          s2:'Shipping lanes',  v2:'At risk',            s3:'ABI Greece',      v3:'Exposure'},
-  '440':{risk:'medium',  name:'Lithuania',   s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy security', v2:'Stressed',           s3:'ABI Baltic',      v3:'Monitoring'},
-  '380':{risk:'medium',  name:'Italy',       s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Diesel',          v2:'>20% from Gulf',     s3:'Glass manuf.',    v3:'Surcharges +30%'},
-  '250':{risk:'medium',  name:'France',      s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Diesel',          v2:'>20% from Gulf',     s3:'ABI France',      v3:'Impacted'},
-  '826':{risk:'medium',  name:'UK',          s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Inflation',       v2:'To breach 5%',       s3:'ABI UK',          v3:'Packaging + energy'},
-  '724':{risk:'medium',  name:'Spain',       s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Spain',       v3:'Monitoring'},
-  '056':{risk:'medium',  name:'Belgium',     s1:'ME crude dep.',    v1:'Significant',     s2:'Port Antwerp',    v2:'Rerouting risk',     s3:'ABI HQ nation',   v3:'Brewing cost pressure'},
-  '528':{risk:'medium',  name:'Netherlands', s1:'ME crude dep.',    v1:'Significant',     s2:'Rotterdam port',  v2:'Rerouting costs',    s3:'ABI supply chain',v3:'Freight impact'},
-  '203':{risk:'medium',  name:'Czechia',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Rate cuts',       v2:'Paused',             s3:'ABI Czech',       v3:'(Pilsner Urquell)'},
-  '348':{risk:'medium',  name:'Hungary',     s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',    v2:'Surging',            s3:'ABI Hungary',     v3:'Exposure'},
-  '620':{risk:'medium',  name:'Portugal',    s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI Portugal',    v3:'Monitoring'},
-  '040':{risk:'medium',  name:'Austria',     s1:'ME crude dep.',    v1:'Significant',     s2:'Gas storage',     v2:'30% cap. EU',        s3:'ABI Austria',     v3:'Energy pressure'},
-  '703':{risk:'medium',  name:'Slovakia',    s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',    v2:'Rising',             s3:'ABI Slovakia',    v3:'Exposure'},
-  '818':{risk:'medium',  name:'Egypt',       s1:'Suez Canal',       v1:'Traffic impacted',s2:'Tourism',         v2:'Disrupted',          s3:'ABI Egypt',       v3:'Grain import risk'},
-  '788':{risk:'medium',  name:'Tunisia',     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI N.Africa',    v3:'Exposure'},
-  '504':{risk:'medium',  name:'Morocco',     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Consumer inf.',   v2:'Rising',             s3:'ABI N.Africa',    v3:'Exposure'},
-  '012':{risk:'medium',  name:'Algeria',     s1:'LNG exporter',     v1:'Partial gain',    s2:'Domestic energy', v2:'Subsidised',         s3:'Regional',        v3:'Monitoring'},
-  '434':{risk:'medium',  name:'Libya',       s1:'Oil producer',     v1:'Partial gain',    s2:'Domestic inst.',  v2:'Ongoing',            s3:'Regional',        v3:'Monitoring'},
-  '760':{risk:'medium',  name:'Syria',       s1:'Regional spillover',v1:'High risk',      s2:'Conflict',        v2:'Active nearby',      s3:'ABI market',      v3:'Dormant'},
-  '729':{risk:'medium',  name:'Sudan',       s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',   v2:'At risk',            s3:'Regional',        v3:'Monitoring'},
-  '710':{risk:'medium',  name:'South Africa',s1:'Energy imports',   v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:"ABI (Carling)",   v3:'Cost pressure'},
-  '036':{risk:'medium',  name:'Australia',   s1:'Wheat acreage',    v1:'Down 15%',        s2:'Barley inputs',   v2:'Fertilizer crisis',  s3:'ABI Pacific',     v3:'Input cost pressure'},
-  '554':{risk:'medium',  name:'New Zealand', s1:'Energy imports',   v1:'Some Gulf dep.',  s2:'Consumer inf.',   v2:'Rising',             s3:'ABI NZ',          v3:'Monitoring'},
-  '360':{risk:'medium',  name:'Indonesia',   s1:'ME crude dep.',    v1:'20–25%',          s2:'Subsidies',       v2:'Gov. strain',        s3:'ABI Indonesia',   v3:'Economic headwinds'},
-  '032':{risk:'lowmed',  name:'Argentina',   s1:'BRL contagion',    v1:'Risk-off EM',     s2:'Rate cuts',       v2:'Delayed',            s3:'ABI LatAm',       v3:'Consumer headwinds'},
-  '152':{risk:'lowmed',  name:'Chile',       s1:'Rate cuts',        v1:'Delayed',         s2:'Energy inflation',v2:'Rising',             s3:'ABI LatAm',       v3:'Consumer exposure'},
-  '604':{risk:'lowmed',  name:'Peru',        s1:'Energy imports',   v1:'Partly Gulf',     s2:'Consumer inf.',   v2:'Rising',             s3:'ABI LatAm',       v3:'Monitoring'},
-  '218':{risk:'lowmed',  name:'Ecuador',     s1:'Oil producer',     v1:'Partial gain',    s2:'Consumer costs',  v2:'Elevated',           s3:'ABI LatAm',       v3:'Monitoring'},
-  '834':{risk:'lowmed',  name:'Tanzania',    s1:'Fuel imports',     v1:'Rising costs',    s2:'Food inflation',  v2:'Accelerating',       s3:'ABI Africa',      v3:'Monitoring'},
-  '076':{risk:'lowmed',  name:'Brazil',      s1:'BRL rate',         v1:'5.92 vs USD',     s2:'Urea imports',    v2:'35% from Gulf',      s3:'ABI #1 market',   v3:'COGS rising; demand stable'},
-  '170':{risk:'low',     name:'Colombia',    s1:'USD/COP rate',     v1:'~4,180',          s2:'Net oil exporter',v2:'Partial gain',       s3:'ABI Colombia',    v3:'Consumer inflation risk'},
-  '840':{risk:'low',     name:'USA',         s1:'Gas prices',       v1:'11-month high',   s2:'CPI forecast',    v2:'~3%',                s3:'ABI US',          v3:'Packaging cost pressure'},
-  '124':{risk:'low',     name:'Canada',      s1:'Net exporter',     v1:'Oil price gain',  s2:'ABI Canada',      v2:'Relatively stable',  s3:'Crude exports',   v3:'Benefiting from surge'},
-  '578':{risk:'low',     name:'Norway',      s1:'Net exporter',     v1:'Major gain',      s2:'Sovereign fund',  v2:'Record inflows',     s3:'EU energy',       v3:'Key alt. supplier'},
-  '643':{risk:'low',     name:'Russia',      s1:'Net exporter',     v1:'Major gain',      s2:'Hormuz dep.',     v2:'Near zero',          s3:'Sanctions',       v3:'Pre-existing'},
-  '484':{risk:'low',     name:'Mexico',      s1:'Net exporter',     v1:'Partial gain',    s2:'ABI #2 market',   v2:'Peso at 18.4',       s3:'Consumer',        v3:'Energy cost pass-through'},
-  '266':{risk:'low',     name:'Gabon',       s1:'Oil exporter',     v1:'Price gain',      s2:'Regional',        v2:'Monitoring',         s3:'ABI Africa',      v3:'Limited exposure'},
-  '508':{risk:'low',     name:'Mozambique',  s1:'LNG producer',     v1:'Price gain',      s2:'Regional',        v2:'Monitoring',         s3:'ABI Africa',      v3:'Limited exposure'},
-  '566':{risk:'low',     name:'Nigeria',     s1:'Net exporter',     v1:'Price gain',      s2:'Domestic refining',v2:'Limited',           s3:'ABI Africa',      v3:'Consumer pressure'},
-  '024':{risk:'low',     name:'Angola',      s1:'Net exporter',     v1:'Price gain',      s2:'China exports',   v2:'At risk',            s3:'ABI Africa',      v3:'Monitoring'},
+let activeLayer = 'oil';
+
+const LAYER_CONFIG = {
+  oil:  { label:'🛢 Oil & Gas Risk',           desc:'Hormuz dependency · Energy import exposure · LNG disruption' },
+  agri: { label:'🌾 Beer & Agriculture Risk',  desc:'Barley · Wheat · Aluminum cans · Glass bottles · Fertilizer/Urea' },
+  cons: { label:'📉 Consumer & Inflation Risk',desc:'CPI shock · Purchasing power erosion · Beer/CPG volume pressure' },
+  cpg:  { label:'🌍 Total CPG Risk',           desc:'Composite of all three layers · Overall beer & CPG market risk' },
 };
+
+const COUNTRIES = {
+  // ── ME PRODUCERS / CONFLICT ZONE ─────────────────────────
+  '364':{name:'Iran',        risks:{oil:'source', agri:'source',   cons:'source',   cpg:'source'},   s1:'Hormuz transit',   v1:'~20M bbl/day',    s2:'Conflict active',  v2:'Active war zone',     s3:'Economy',          v3:'Freefall; infra destroyed'},
+  '682':{name:'Saudi Arabia',risks:{oil:'source', agri:'source',   cons:'source',   cpg:'source'},   s1:'Oil output',       v1:'~10M bbl/day',    s2:'Ras Tanura',       v2:'Refinery hit',        s3:'CPG market',       v3:'Largely disrupted'},
+  '368':{name:'Iraq',        risks:{oil:'source', agri:'source',   cons:'source',   cpg:'source'},   s1:'Oil exports',      v1:'~4M bbl/day',     s2:'Conflict',         v2:'US PMF strikes',      s3:'CPG market',       v3:'Fully disrupted'},
+  '784':{name:'UAE',         risks:{oil:'source', agri:'high',     cons:'high',     cpg:'source'},   s1:'Jebel Ali hub',    v1:'Serves 45-50M',   s2:'Fujairah port',    v2:'Attacked',            s3:'CPG distribution', v3:'Severely strained'},
+  '414':{name:'Kuwait',      risks:{oil:'source', agri:'high',     cons:'high',     cpg:'source'},   s1:'US Embassy',       v1:'Closed',          s2:'IRGC attacks',     v2:'Ongoing drones',      s3:'Beer/CPG dist.',   v3:'Shutdown'},
+  '634':{name:'Qatar',       risks:{oil:'source', agri:'high',     cons:'high',     cpg:'source'},   s1:'QatarEnergy LNG',  v1:'Halted',          s2:'Helium supply',    v2:'1/3 of global',       s3:'Distribution',     v3:'Disrupted'},
+  '512':{name:'Oman',        risks:{oil:'source', agri:'medium',   cons:'medium',   cpg:'high'},     s1:'Sohar port',       v1:'Drone attack',    s2:'Hormuz passage',   v2:'Selective only',      s3:'Distribution',     v3:'Disrupted'},
+  '887':{name:'Yemen',       risks:{oil:'source', agri:'high',     cons:'critical', cpg:'high'},     s1:'Red Sea attacks',  v1:'Iran-linked',     s2:'Food security',    v2:'Critically at risk',  s3:'Consumer',         v3:'Collapsing'},
+  '400':{name:'Jordan',      risks:{oil:'source', agri:'high',     cons:'high',     cpg:'high'},     s1:'Regional impact',  v1:'High',            s2:'Food imports',     v2:'Severely disrupted',  s3:'Consumer conf.',   v3:'Falling sharply'},
+  '048':{name:'Bahrain',     risks:{oil:'source', agri:'medium',   cons:'medium',   cpg:'source'},   s1:'US 5th Fleet HQ',  v1:'At risk',         s2:'Missile attacks',  v2:'Ongoing',             s3:'Distribution',     v3:'Disrupted'},
+  '422':{name:'Lebanon',     risks:{oil:'source', agri:'high',     cons:'critical', cpg:'high'},     s1:'Israeli strikes',  v1:'Ongoing',         s2:'Food supply',      v2:'Crisis level',        s3:'Market',           v3:'Shutdown'},
+  '376':{name:'Israel',      risks:{oil:'source', agri:'high',     cons:'critical', cpg:'high'},     s1:'Missile alerts',   v1:'Jerusalem/TA',    s2:'Supply chains',    v2:'Severely disrupted',  s3:'Consumer conf.',   v3:'Collapsed'},
+  // ── CRITICAL OIL ─────────────────────────────────────────
+  '410':{name:'South Korea', risks:{oil:'critical',agri:'high',    cons:'high',     cpg:'critical'}, s1:'Hormuz flows',     v1:'12% of global',   s2:'Barley imports',   v2:'Price spike +33%',    s3:'Consumer spend',   v3:'Declining sharply'},
+  '392':{name:'Japan',       risks:{oil:'critical',agri:'high',    cons:'high',     cpg:'critical'}, s1:'Hormuz flows',     v1:'10% of global',   s2:'Barley/malt',      v2:'Import cost surge',   s3:'Reserves',         v3:'150 days'},
+  '158':{name:'Taiwan',      risks:{oil:'critical',agri:'medium',  cons:'medium',   cpg:'high'},     s1:'Hormuz flows',     v1:'~9% of global',   s2:'Aluminum imports', v2:'Can cost pressure',   s3:'Consumer',         v3:'Cost pressure'},
+  '702':{name:'Singapore',   risks:{oil:'critical',agri:'medium',  cons:'low',      cpg:'high'},     s1:'Refinery capacity',v1:'Key APAC hub',    s2:'Hormuz dep.',      v2:'~9% of flows',        s3:'Consumer',         v3:'Resilient — high income'},
+  '608':{name:'Philippines', risks:{oil:'critical',agri:'high',    cons:'critical', cpg:'critical'}, s1:'ME oil flows',     v1:'~14% of imports', s2:'Wheat/grain',      v2:'Gulf-reliant',        s3:'Energy emergency', v3:'Declared by Marcos'},
+  '764':{name:'Thailand',    risks:{oil:'critical',agri:'high',    cons:'high',     cpg:'critical'}, s1:'ME crude dep.',    v1:'High',            s2:'LNG imports',      v2:'Gulf-dependent',      s3:'Tourism + consumer',v3:'Double pressure'},
+  // ── HIGH OIL ─────────────────────────────────────────────
+  '156':{name:'China',       risks:{oil:'high',   agri:'high',     cons:'high',     cpg:'high'},     s1:'Hormuz flows',     v1:'37.7% of total',  s2:'Barley/aluminum',  v2:'Major importer',      s3:'Consumer conf.',   v3:'Stagflation fears'},
+  '356':{name:'India',       risks:{oil:'high',   agri:'critical', cons:'high',     cpg:'critical'}, s1:'Hormuz flows',     v1:'14.7% of total',  s2:'Glass bottles',    v2:'Shortage warning',    s3:'Food inflation',   v3:'Accelerating'},
+  '586':{name:'Pakistan',    risks:{oil:'high',   agri:'critical', cons:'critical', cpg:'critical'}, s1:'Gulf LNG dep.',    v1:'Critical',        s2:'Wheat imports',    v2:'Gulf-reliant',        s3:'Consumer power',   v3:'Collapsing rapidly'},
+  '050':{name:'Bangladesh',  risks:{oil:'high',   agri:'critical', cons:'critical', cpg:'critical'}, s1:'Energy imports',   v1:'Gulf-dependent',  s2:'Food security',    v2:'Severely at risk',    s3:'Purchasing power', v3:'Falling fast'},
+  '104':{name:'Myanmar',     risks:{oil:'high',   agri:'high',     cons:'high',     cpg:'high'},     s1:'LNG imports',      v1:'Gulf-sourced',    s2:'Energy security',  v2:'Severely stressed',   s3:'Consumer',         v3:'Acute pressure'},
+  '144':{name:'Sri Lanka',   risks:{oil:'high',   agri:'high',     cons:'critical', cpg:'high'},     s1:'Oil imports',      v1:'80%+ Gulf',       s2:'Food imports',     v2:'Already stressed',    s3:'Reserves',         v3:'Already depleted'},
+  '116':{name:'Cambodia',    risks:{oil:'high',   agri:'high',     cons:'high',     cpg:'high'},     s1:'Energy imports',   v1:'Gulf-dependent',  s2:'LNG supply',       v2:'Disrupted',           s3:'Consumer',         v3:'Inflation risk'},
+  // ── MED-HIGH OIL ─────────────────────────────────────────
+  '704':{name:'Vietnam',     risks:{oil:'medhigh',agri:'medhigh',  cons:'medium',   cpg:'medhigh'},  s1:'Oil imports',      v1:'Partly Gulf',     s2:'Manufacturing',    v2:'Cost pressure',       s3:'Exports',          v3:'Competitiveness hit'},
+  '288':{name:'Ghana',       risks:{oil:'medhigh',agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel imports',     v1:'Partly Gulf',     s2:'Food inflation',   v2:'Accelerating',        s3:'Consumer inf.',    v3:'Rising sharply'},
+  '404':{name:'Kenya',       risks:{oil:'medhigh',agri:'high',     cons:'high',     cpg:'high'},     s1:'Oil imports',      v1:'Gulf-reliant',    s2:'Food security',    v2:'At risk',             s3:'Consumer inf.',    v3:'Rising'},
+  '800':{name:'Uganda',      risks:{oil:'medhigh',agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel prices',      v1:'Rising sharply',  s2:'Food inflation',   v2:'Accelerating',        s3:'Consumer',         v3:'Stress'},
+  '231':{name:'Ethiopia',    risks:{oil:'medhigh',agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',    v2:'At risk',             s3:'Consumer',         v3:'Exposure'},
+  '458':{name:'Malaysia',    risks:{oil:'medhigh',agri:'low',      cons:'low',      cpg:'lowmed'},   s1:'Net exporter',     v1:'Partial gain',    s2:'Palm oil demand',  v2:'Rising (biofuel)',    s3:'Consumer',         v3:'Relatively resilient'},
+  // ── MEDIUM OIL ───────────────────────────────────────────
+  '792':{name:'Turkey',      risks:{oil:'medium', agri:'high',     cons:'high',     cpg:'high'},     s1:'Iran pipeline',    v1:'87% gas from Iran',s2:'Grain imports',   v2:'Disrupted',           s3:'Inflation',        v3:'Severe — pre-existing'},
+  '276':{name:'Germany',     risks:{oil:'medium', agri:'high',     cons:'medium',   cpg:'high'},     s1:'ME crude dep.',    v1:'42–52%',          s2:'Glass + aluminum', v2:'Surcharges +30%',     s3:'Consumer conf.',   v3:'Declining'},
+  '616':{name:'Poland',      risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'42–52%',          s2:'Rate cuts',        v2:'Paused',              s3:'Consumer',         v3:'Pressure'},
+  '300':{name:'Greece',      risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'42–52%',          s2:'Shipping lanes',   v2:'At risk',             s3:'Tourism hit',      v3:'Compounding'},
+  '440':{name:'Lithuania',   risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy security',  v2:'Stressed',            s3:'Consumer',         v3:'Monitoring'},
+  '380':{name:'Italy',       risks:{oil:'medium', agri:'high',     cons:'medium',   cpg:'high'},     s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Glass manuf.',     v2:'Surcharges +30%',     s3:'Consumer conf.',   v3:'Declining'},
+  '250':{name:'France',      risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Barley exports',   v2:'Price spike',         s3:'Consumer',         v3:'Cost pressure'},
+  '826':{name:'UK',          risks:{oil:'medium', agri:'high',     cons:'high',     cpg:'high'},     s1:'Jet fuel',         v1:'>50% from Gulf',  s2:'Inflation',        v2:'To breach 5%',        s3:'Consumer conf.',   v3:'Falling'},
+  '724':{name:'Spain',       risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',    v2:'Rising',              s3:'Consumer',         v3:'Monitoring'},
+  '056':{name:'Belgium',     risks:{oil:'medium', agri:'high',     cons:'medium',   cpg:'high'},     s1:'ME crude dep.',    v1:'Significant',     s2:'Brewing energy',   v2:'Cost surge',          s3:'Consumer',         v3:'Pressure'},
+  '528':{name:'Netherlands', risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Rotterdam port',   v1:'Rerouting costs', s2:'Freight costs',    v2:'Rising',              s3:'Consumer',         v3:'Monitoring'},
+  '203':{name:'Czechia',     risks:{oil:'medium', agri:'high',     cons:'medium',   cpg:'high'},     s1:'ME crude dep.',    v1:'42–52%',          s2:'Brewing inputs',   v2:'Cost pressure',       s3:'Consumer',         v3:'Monitoring'},
+  '348':{name:'Hungary',     risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',     v2:'Surging',             s3:'Consumer',         v3:'Pressure'},
+  '620':{name:'Portugal',    risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'Significant',     s2:'Consumer inf.',    v2:'Rising',              s3:'Consumer',         v3:'Monitoring'},
+  '040':{name:'Austria',     risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'Significant',     s2:'Gas storage',      v2:'30% cap. EU',         s3:'Consumer',         v3:'Pressure'},
+  '703':{name:'Slovakia',    risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'ME crude dep.',    v1:'42–52%',          s2:'Energy costs',     v2:'Rising',              s3:'Consumer',         v3:'Exposure'},
+  '818':{name:'Egypt',       risks:{oil:'medium', agri:'critical', cons:'critical', cpg:'critical'}, s1:'Suez Canal',       v1:'Traffic impacted',s2:'Wheat imports',    v2:'Heavily Gulf-reliant',s3:'Food inflation',   v3:'Severe — pre-existing'},
+  '788':{name:'Tunisia',     risks:{oil:'medium', agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food imports',     v2:'Disrupted',           s3:'Consumer inf.',    v3:'Accelerating'},
+  '504':{name:'Morocco',     risks:{oil:'medium', agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Fertilizer',       v2:'Supply disrupted',    s3:'Consumer inf.',    v3:'Rising'},
+  '012':{name:'Algeria',     risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'LNG exporter',     v1:'Partial gain',    s2:'Domestic food',    v2:'Subsidised',          s3:'Consumer',         v3:'Shielded by subsidies'},
+  '434':{name:'Libya',       risks:{oil:'medium', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Oil producer',     v1:'Partial gain',    s2:'Domestic inst.',   v2:'Ongoing',             s3:'Consumer',         v3:'Monitoring'},
+  '760':{name:'Syria',       risks:{oil:'medium', agri:'high',     cons:'critical', cpg:'high'},     s1:'Regional spillover',v1:'High risk',      s2:'Food security',    v2:'Crisis level',        s3:'Consumer',         v3:'Collapsed'},
+  '729':{name:'Sudan',       risks:{oil:'medium', agri:'high',     cons:'critical', cpg:'high'},     s1:'Fuel imports',     v1:'Gulf-reliant',    s2:'Food security',    v2:'Critical',            s3:'Consumer',         v3:'Crisis level'},
+  '710':{name:'South Africa',risks:{oil:'medium', agri:'medium',   cons:'high',     cpg:'high'},     s1:'Energy imports',   v1:'Partly Gulf',     s2:'Barley/hops',      v2:'Input cost rise',     s3:'Consumer conf.',   v3:'Declining'},
+  '036':{name:'Australia',   risks:{oil:'medium', agri:'critical', cons:'medium',   cpg:'high'},     s1:'Wheat acreage',    v1:'Down 15%',        s2:'Barley inputs',    v2:'Fertilizer crisis',   s3:'Consumer',         v3:'Resilient'},
+  '554':{name:'New Zealand', risks:{oil:'medium', agri:'high',     cons:'medium',   cpg:'medium'},   s1:'Energy imports',   v1:'Some Gulf dep.',  s2:'Hops + barley',    v2:'Input pressure',      s3:'Consumer',         v3:'Monitoring'},
+  '360':{name:'Indonesia',   risks:{oil:'medium', agri:'medhigh',  cons:'high',     cpg:'high'},     s1:'ME crude dep.',    v1:'20–25%',          s2:'Palm oil/grain',   v2:'Price disruption',    s3:'Subsidy strain',   v3:'Consumer pressure'},
+  // ── LOW-MED OIL ──────────────────────────────────────────
+  '032':{name:'Argentina',   risks:{oil:'lowmed', agri:'medhigh',  cons:'high',     cpg:'high'},     s1:'EM contagion',     v1:'Risk-off',        s2:'Wheat exporter',   v2:'Price windfall',      s3:'Inflation',        v3:'Pre-existing crisis'},
+  '152':{name:'Chile',       risks:{oil:'lowmed', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Rate cuts',        v1:'Delayed',         s2:'Fertilizer costs', v2:'Rising',              s3:'Consumer',         v3:'Pressure'},
+  '604':{name:'Peru',        risks:{oil:'lowmed', agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Energy imports',   v1:'Partly Gulf',     s2:'Consumer inf.',    v2:'Rising',              s3:'Consumer',         v3:'Monitoring'},
+  '218':{name:'Ecuador',     risks:{oil:'lowmed', agri:'low',      cons:'medium',   cpg:'lowmed'},   s1:'Oil producer',     v1:'Partial gain',    s2:'Consumer costs',   v2:'Elevated',            s3:'Consumer',         v3:'Monitoring'},
+  '834':{name:'Tanzania',    risks:{oil:'lowmed', agri:'high',     cons:'high',     cpg:'high'},     s1:'Fuel imports',     v1:'Rising costs',    s2:'Food inflation',   v2:'Accelerating',        s3:'Consumer',         v3:'Stress'},
+  '076':{name:'Brazil',      risks:{oil:'lowmed', agri:'high',     cons:'high',     cpg:'high'},     s1:'BRL rate',         v1:'5.92 vs USD',     s2:'Urea imports',     v2:'35% from Gulf',       s3:'Consumer conf.',   v3:'Declining on inflation'},
+  // ── LOW / GAIN ───────────────────────────────────────────
+  '170':{name:'Colombia',    risks:{oil:'low',    agri:'medium',   cons:'high',     cpg:'medium'},   s1:'USD/COP rate',     v1:'~4,180',          s2:'Net oil exporter', v2:'Partial gain',        s3:'Energy alert',     v3:'Declared'},
+  '840':{name:'USA',         risks:{oil:'low',    agri:'medium',   cons:'medium',   cpg:'medium'},   s1:'Gas prices',       v1:'11-month high',   s2:'Aluminum cans',    v2:'Cost pressure',       s3:'CPI forecast',     v3:'~3%'},
+  '124':{name:'Canada',      risks:{oil:'low',    agri:'low',      cons:'low',      cpg:'low'},      s1:'Net exporter',     v1:'Oil price gain',  s2:'Wheat exporter',   v2:'Price benefit',       s3:'Consumer',         v3:'Relatively stable'},
+  '578':{name:'Norway',      risks:{oil:'low',    agri:'low',      cons:'low',      cpg:'low'},      s1:'Net exporter',     v1:'Major gain',      s2:'Sovereign fund',   v2:'Record inflows',      s3:'Consumer',         v3:'Well insulated'},
+  '643':{name:'Russia',      risks:{oil:'low',    agri:'low',      cons:'low',      cpg:'low'},      s1:'Net exporter',     v1:'Major gain',      s2:'Wheat exporter',   v2:'Price windfall',      s3:'Sanctions',        v3:'Pre-existing offset'},
+  '484':{name:'Mexico',      risks:{oil:'low',    agri:'medium',   cons:'high',     cpg:'medium'},   s1:'Net exporter',     v1:'Partial gain',    s2:'Corn imports',     v2:'Price pressure',      s3:'Peso weakness',    v3:'Consumer pressure'},
+  '266':{name:'Gabon',       risks:{oil:'low',    agri:'low',      cons:'low',      cpg:'low'},      s1:'Oil exporter',     v1:'Price gain',      s2:'Regional',         v2:'Monitoring',          s3:'Consumer',         v3:'Limited exposure'},
+  '508':{name:'Mozambique',  risks:{oil:'low',    agri:'medium',   cons:'medium',   cpg:'lowmed'},   s1:'LNG producer',     v1:'Price gain',      s2:'Food security',    v2:'Monitoring',          s3:'Consumer',         v3:'Limited exposure'},
+  '566':{name:'Nigeria',     risks:{oil:'low',    agri:'medium',   cons:'high',     cpg:'medium'},   s1:'Net exporter',     v1:'Price gain',      s2:'Domestic refining',v2:'Limited',            s3:'Naira weakness',   v3:'Consumer pressure'},
+  '024':{name:'Angola',      risks:{oil:'low',    agri:'low',      cons:'medium',   cpg:'lowmed'},   s1:'Net exporter',     v1:'Price gain',      s2:'China exports',    v2:'At risk',             s3:'Consumer',         v3:'Monitoring'},
+};
+
+// ═══════════════════════════════════════════════════════════
+// LAYER-SPECIFIC TOOLTIP DATA — explains WHY each risk rating
+// Merged into COUNTRIES[id].tt after definition
+// ═══════════════════════════════════════════════════════════
+const COUNTRY_TOOLTIPS = {
+  '076': { // Brazil — lowmed oil, high agri, high cons, high cpg
+    oil:  {s1:'No direct Hormuz dep.',v1:'Indirect via global prices',s2:'Urea from Gulf',    v2:'35% of supply disrupted',s3:'BRL/USD rate',     v3:'5.92 — import cost surge'},
+    agri: {s1:'Urea/fertilizer',      v1:'35% sourced from Gulf — cut',s2:'Barley costs',     v2:'+33% — beer COGS rising', s3:'Wheat price',      v3:'+44% — agri input shock'},
+    cons: {s1:'BRL weakness',         v1:'Compresses real wages',      s2:'Food inflation',   v2:'Energy + grain surge',    s3:'Beer demand',      v3:'Resilient but under pressure'},
+    cpg:  {s1:'Urea + barley surge',  v1:'Dual input cost pressure',   s2:'BRL at 5.92',      v2:'USD earnings compressed', s3:'Volume risk',      v3:'Moderate — demand holding'},
+  },
+  '484': { // Mexico — low oil, medium agri, high cons, medium cpg
+    oil:  {s1:'Net oil exporter',     v1:'Partial price gain',         s2:'Refinery capacity',v2:'Limited domestic',        s3:'Peso rate',        v3:'18.4 vs USD — weakening'},
+    agri: {s1:'Corn imports',         v1:'Price pressure rising',      s2:'Barley for beer',  v2:'Import cost +33%',        s3:'Aluminum cans',    v3:'+20% — major can market'},
+    cons: {s1:'Peso at 18.4',         v1:'Real wage erosion',          s2:'Energy pass-through',v2:'Fuel costs up',          s3:'Consumer conf.',   v3:'Declining Q1 2026'},
+    cpg:  {s1:'Aluminum can costs',   v1:'+20% — Corona, Modelo',      s2:'Corn/grain inputs',v2:'Price pressure',          s3:'Peso',             v3:'Hurts purchasing power'},
+  },
+  '170': { // Colombia — low oil, medium agri, high cons, medium cpg
+    oil:  {s1:'Net oil exporter',     v1:'Partial gain on price',      s2:'USD/COP rate',     v2:'4,180 — modest weakness', s3:'Energy alert',     v3:'Government declared'},
+    agri: {s1:'Barley imports',       v1:'Cost pressure +33%',         s2:'Fertilizer',       v2:'Gulf-sourced, disrupted', s3:'Glass bottles',    v3:'Energy cost surge'},
+    cons: {s1:'Consumer conf.',       v1:'Declining sharply',          s2:'Fuel prices',      v2:'Rising on import costs',  s3:'Beer volumes',     v3:'Demand risk in H2 2026'},
+    cpg:  {s1:'Oil gain offset',      v1:'By barley + can cost rise',  s2:'Consumer',         v2:'Inflation eroding spend',  s3:'Volume risk',      v3:'Moderate downside'},
+  },
+  '840': { // USA — low oil, medium agri, medium cons, medium cpg
+    oil:  {s1:'Net exporter',         v1:'Benefits from high prices',  s2:'Gas prices',       v2:'11-month high domestically',s3:'CPI impact',     v3:'~3% — manageable'},
+    agri: {s1:'Aluminum cans',        v1:'+20% — Bud Light, Michelob', s2:'Corn costs',       v2:'Modest pressure',         s3:'Barley',           v3:'Domestic supply stable'},
+    cons: {s1:'Consumer resilient',   v1:'High income, low ME dep.',   s2:'Gas prices',       v2:'Eroding discretionary',   s3:'Beer demand',      v3:'Holding — premiumization'},
+    cpg:  {s1:'Can packaging',        v1:'Aluminum +20% — key cost',   s2:'Consumer',         v2:'Resilient but watching',  s3:'CPI',              v3:'~3% — manageable'},
+  },
+  '356': { // India — high oil, critical agri, high cons, critical cpg
+    oil:  {s1:'Hormuz flows',         v1:'14.7% of global total',      s2:'LPG shortage',     v2:'Gulf-dependent',          s3:'Glass bottles',    v3:'Shortage warning issued'},
+    agri: {s1:'Glass bottle shortage',v1:'Energy cost +40%',           s2:'Barley imports',   v2:'Price spike hitting brewers',s3:'Aluminum cans', v3:'Supply chain disrupted'},
+    cons: {s1:'Food inflation',       v1:'Grain + edible oil surge',   s2:'Energy costs',     v2:'LPG price shock',         s3:'Consumer spend',   v3:'Discretionary at risk'},
+    cpg:  {s1:'Packaging crisis',     v1:'Glass + can both hit hard',  s2:'Barley costs',     v2:'Brewing input surge',     s3:'Consumer',         v3:'Inflation + supply shock'},
+  },
+  '156': { // China — high oil/agri/cons/cpg
+    oil:  {s1:'Hormuz flows',         v1:'37.7% of global total',      s2:'ME crude dep.',    v2:'>50% of all imports',     s3:'Stocks',           v3:'Worst day in ~1yr'},
+    agri: {s1:'Barley importer',      v1:'Major global buyer',         s2:'Aluminum smelting',v2:'Energy cost surge',       s3:'Glass production', v3:'LNG cost pressure'},
+    cons: {s1:'Stagflation fears',    v1:'Energy + property crisis',   s2:'Consumer conf.',   v2:'Declining sharply',       s3:'Beer premium',     v3:'Trading down risk'},
+    cpg:  {s1:'Input cost surge',     v1:'Energy + barley double hit', s2:'Consumer conf.',   v2:'Declining on stagflation', s3:'Packaging',       v3:'Aluminum + glass both up'},
+  },
+  '410': { // South Korea — critical oil/cpg, high agri/cons
+    oil:  {s1:'12% of global flows',  v1:'Highest Hormuz exposure',    s2:'~90% crude import',v2:'Almost entirely Gulf-dep.',s3:'Reserve',          v3:'~150 days only'},
+    agri: {s1:'Barley for beer',      v1:'Import cost +33%',           s2:'Aluminum cans',    v2:'Key can market, +20%',    s3:'Glass imports',    v3:'Energy cost pressure'},
+    cons: {s1:'Energy emergency',     v1:'Cabinet convened Mar 18',    s2:'Fuel prices',      v2:'+40% in 3 weeks',         s3:'Consumer spend',   v3:'Declining sharply'},
+    cpg:  {s1:'Beer input costs',     v1:'Barley + cans + energy',     s2:'Consumer shock',   v2:'Fuel +40% hits volumes',  s3:'Reserve position', v3:'150 days — tight'},
+  },
+  '392': { // Japan — critical oil/cpg, high agri/cons
+    oil:  {s1:'10% of global flows',  v1:'Major Hormuz exposure',      s2:'Fossil fuel dep.', v2:'60.8% total energy',      s3:'Reserve',          v3:'150 days strategic stock'},
+    agri: {s1:'Barley imports',       v1:'Cost surge — beer inputs',   s2:'Wheat imports',    v2:'Price spike +44%',        s3:'Aluminum smelting',v3:'Energy costs driving can costs'},
+    cons: {s1:'Consumer conf.',       v1:'Declining on energy cost',   s2:'Inflation',        v2:'Wage growth lagging',     s3:'Beer volumes',     v3:'Premium segment at risk'},
+    cpg:  {s1:'Input cost shock',     v1:'Barley + energy + cans',     s2:'Yen pressure',     v2:'Import costs rising',     s3:'Consumer',         v3:'Demand softening'},
+  },
+  '608': { // Philippines — critical oil/cons/cpg, high agri
+    oil:  {s1:'~14% ME oil imports',  v1:'No pipeline, no local oil',  s2:'No alternatives', v2:'Completely exposed',      s3:'National emergency',v3:'Declared by Marcos'},
+    agri: {s1:'Wheat/grain imports',  v1:'Heavily Gulf-reliant',       s2:'Fertilizer',       v2:'Disrupted — food risk',   s3:'Glass packaging',  v3:'Energy cost surge'},
+    cons: {s1:'Energy emergency',     v1:'Marcos declared Mar 24',     s2:'Fuel prices',      v2:'Surging — no alt. supply',s3:'Consumer spending', v3:'Collapse risk on low incomes'},
+    cpg:  {s1:'Distribution costs',   v1:'Fuel costs crippling',       s2:'Consumer incomes', v2:'Erosion accelerating',    s3:'Beer/CPG volumes', v3:'Severe downside risk'},
+  },
+  '036': { // Australia — medium oil, critical agri, medium cons, high cpg
+    oil:  {s1:'Some Gulf LNG dep.',   v1:'Partial exposure',           s2:'Wheat acreage',    v2:'Down 15% — fertilizer',   s3:'Energy dep.',      v3:'Partial Gulf LNG'},
+    agri: {s1:'#1 barley exporter',   v1:'Fertilizer crisis hits next crop',s2:'Urea from Gulf',v2:'Supply severely disrupted',s3:'Wheat acreage',  v3:'Down 15% next season'},
+    cons: {s1:'Consumer resilient',   v1:'High income, low ME dep.',   s2:'Food prices',      v2:'Modest upward pressure',  s3:'Beer demand',      v3:'Stable — premium market'},
+    cpg:  {s1:'Barley supply threat', v1:'Key global input at risk',   s2:'Fertilizer shock', v2:'Next harvest threatened', s3:'Consumer',         v3:'Resilient in near-term'},
+  },
+  '818': { // Egypt — medium oil, critical agri/cons, critical cpg
+    oil:  {s1:'Suez Canal',           v1:'Traffic severely impacted',  s2:'Tourism revenue',  v2:'Collapsed — war nearby',  s3:'FX reserves',      v3:'Critically low'},
+    agri: {s1:'#1 wheat importer',    v1:'Globally — Gulf routes cut', s2:'Food subsidies',   v2:'Straining budget',        s3:'Barley imports',   v3:'Disrupted'},
+    cons: {s1:'Food inflation',       v1:'Severe — bread is a staple', s2:'Energy subsidies', v2:'Unsustainable cost surge', s3:'Consumer crisis',  v3:'Pre-existing + now critical'},
+    cpg:  {s1:'Food security crisis', v1:'Critical wheat dependence',  s2:'Consumer crisis',  v2:'Purchasing power gone',   s3:'Beer/CPG volumes', v3:'Market effectively frozen'},
+  },
+  '276': { // Germany — medium oil, high agri/cpg, medium cons
+    oil:  {s1:'42–52% ME crude dep.', v1:'Moderate exposure',          s2:'Gas storage',      v2:'30% capacity',            s3:'ECB rate cuts',    v3:'Paused Mar 19'},
+    agri: {s1:'Glass manufacturers',  v1:'Surcharges +30% — energy',   s2:'Aluminum smelting',v2:'Energy cost surge +88%',  s3:'Barley supply',    v3:'Domestic but fertilizer hit'},
+    cons: {s1:'Consumer conf.',       v1:'Declining on energy costs',  s2:'Inflation return', v2:'Energy driving CPI',      s3:'Beer volumes',     v3:'Premium trading down risk'},
+    cpg:  {s1:'Glass + aluminum',     v1:'Both packaging +20–30%',     s2:'Brewing energy',   v2:'Natural gas +88%',        s3:'Consumer',         v3:'Sentiment declining'},
+  },
+  '826': { // UK — medium oil, high agri/cons/cpg
+    oil:  {s1:'Jet fuel',             v1:'>50% from Gulf',             s2:'Inflation',        v2:'Forecast to breach 5%',   s3:'Starmer emergency',v3:'Cabinet called Mar 23'},
+    agri: {s1:'UK = barley exporter', v1:'But fertilizer costs rising',s2:'Can/glass costs',  v2:'Packaging pressure',      s3:'Brewing inputs',   v3:'Energy + barley surge'},
+    cons: {s1:'Inflation',            v1:'Breaching 5% — wage squeeze',s2:'Energy bills',     v2:'Rising sharply',          s3:'Consumer spend',   v3:'Discretionary under pressure'},
+    cpg:  {s1:'Packaging',            v1:'Glass + aluminum both up',   s2:'Inflation 5%+',    v2:'Eroding beer spend',      s3:'Consumer conf.',   v3:'Declining sentiment'},
+  },
+  '792': { // Turkey — medium oil, high agri/cons/cpg
+    oil:  {s1:'Iran gas pipeline',    v1:'87% of gas from Iran',       s2:'Energy security',  v2:'Critically stressed',     s3:'Inflation',        v3:'Pre-existing 65%+ rate'},
+    agri: {s1:'Grain imports',        v1:'Heavily disrupted routes',   s2:'Fertilizer costs', v2:'Surging',                 s3:'Beer inputs',      v3:'Barley + glass both up'},
+    cons: {s1:'65%+ inflation',       v1:'Pre-existing crisis',        s2:'Gas supply',       v2:'Iran pipeline at risk',   s3:'Consumer power',   v3:'Severely eroded'},
+    cpg:  {s1:'Iran pipeline',        v1:'Gas supply existential risk',s2:'Consumer crisis',  v2:'65% inflation compounding',s3:'Beer market',     v3:'Volume collapse risk'},
+  },
+  '056': { // Belgium — medium oil, high agri/cpg, medium cons
+    oil:  {s1:'ME crude dep.',        v1:'Significant',                s2:'Port Antwerp',     v2:'Rerouting risk',          s3:'Brewing energy',   v3:'Cost pressure'},
+    agri: {s1:'Brewing energy costs', v1:'Natural gas +88% — major',   s2:'Barley costs',     v2:'+33% input surge',        s3:'Glass bottles',    v3:'Surcharges +30%'},
+    cons: {s1:'Consumer conf.',       v1:'Energy bill pressure',       s2:'Inflation',        v2:'Above ECB target',        s3:'Beer premium',     v3:'Downtrading risk'},
+    cpg:  {s1:'Brewing hub risk',     v1:'Energy + barley + glass',    s2:'Port Antwerp',     v2:'Freight disruption',      s3:'Consumer',         v3:'Margin squeeze'},
+  },
+  '203': { // Czechia — medium oil, high agri/cpg, medium cons
+    oil:  {s1:'42–52% ME crude dep.', v1:'Moderate exposure',          s2:'Rate cuts paused', v2:'ECB Mar 19',              s3:'Consumer',         v3:'Pressure'},
+    agri: {s1:'Pilsner Urquell hub',  v1:'Energy + barley double hit', s2:'Barley costs',     v2:'+33% — Bohemian brewing', s3:'Glass bottles',    v3:'+30% energy surcharge'},
+    cons: {s1:'Consumer conf.',       v1:'Declining',                  s2:'Inflation',        v2:'Energy-driven',           s3:'Beer tourism',     v3:'Pilsen tourism at risk'},
+    cpg:  {s1:'Barley + energy + glass',v1:'Triple input pressure',    s2:'Export markets',   v2:'Cost competitiveness hit',s3:'Consumer',         v3:'Domestic demand holding'},
+  },
+  '380': { // Italy — medium oil, high agri/cpg, medium cons
+    oil:  {s1:'Jet fuel',             v1:'>50% from Gulf',             s2:'Diesel imports',   v2:'>20% from Gulf',          s3:'Glass manuf.',     v3:'Energy surcharges +30%'},
+    agri: {s1:'Glass manufacturing',  v1:'Italy = key EU glass hub',   s2:'Energy costs',     v2:'+30% surcharge on bottles',s3:'Barley',          v3:'Import cost pressure'},
+    cons: {s1:'Consumer conf.',       v1:'Tourism-dependent economy',  s2:'Inflation',        v2:'Energy-driven',           s3:'Wine + beer',      v3:'Premium under pressure'},
+    cpg:  {s1:'Glass hub risk',       v1:'EU wine/beer bottle producer',s2:'Energy',          v2:'+30% manufacturing cost', s3:'Consumer',         v3:'Declining sentiment'},
+  },
+  '586': { // Pakistan — high oil, critical agri/cons/cpg
+    oil:  {s1:'Gulf LNG critical dep.',v1:'No alternatives',           s2:'LPG for cooking', v2:'Critical — 80% homes',    s3:'Consumer power',   v3:'Collapsing rapidly'},
+    agri: {s1:'Wheat imports',        v1:'Gulf-reliant, severely cut', s2:'Urea fertilizer',  v2:'Gulf supply cut off',     s3:'Food security',    v3:'Crisis level — starvation risk'},
+    cons: {s1:'Consumer power',       v1:'Collapsing rapidly',         s2:'Food inflation',   v2:'Double-digit surge',      s3:'Beer/CPG market',  v3:'Effectively zero — dry nation'},
+    cpg:  {s1:'Market frozen',        v1:'Economic collapse risk',     s2:'Food crisis',      v2:'Wheat/grain critical',    s3:'CPG volumes',      v3:'Near zero — crisis state'},
+  },
+  '578': { // Norway — low across all
+    oil:  {s1:'Net exporter',         v1:'Major price windfall',       s2:'Sovereign fund',   v2:'Record inflows',          s3:'EU alt. supplier', v3:'Key pipeline source'},
+    agri: {s1:'Food self-sufficient', v1:'Strong domestic base',       s2:'Fertilizer',       v2:'Limited Gulf exposure',   s3:'Beer inputs',      v3:'Well insulated'},
+    cons: {s1:'Consumer strong',      v1:'Oil wealth insulating',      s2:'Inflation',        v2:'Well managed vs EU',      s3:'Beer demand',      v3:'Resilient premium market'},
+    cpg:  {s1:'Net beneficiary',      v1:'Oil windfall funds state',   s2:'Consumer',         v2:'Strong purchasing power', s3:'CPG market',       v3:'Well insulated from crisis'},
+  },
+  '124': { // Canada — low across all
+    oil:  {s1:'Net exporter',         v1:'Oil price windfall',         s2:'Wheat exporter',   v2:'Price benefit',           s3:'Consumer',         v3:'Relatively stable'},
+    agri: {s1:'Wheat exporter',       v1:'Price windfall +44%',        s2:'Barley producer',  v2:'Key global supplier',     s3:'Canola exports',   v3:'Price benefit'},
+    cons: {s1:'Consumer strong',      v1:'Oil + ag wealth insulating', s2:'Inflation',        v2:'Contained vs peers',      s3:'Beer demand',      v3:'Stable — premium market'},
+    cpg:  {s1:'Dual windfall',        v1:'Oil + wheat price gains',    s2:'Consumer',         v2:'Well insulated',          s3:'CPG market',       v3:'Performing relatively well'},
+  },
+  '643': { // Russia — low across all
+    oil:  {s1:'Net exporter',         v1:'Major price gain',           s2:'Hormuz dep.',      v2:'Near zero — own supply',  s3:'Sanctions',        v3:'Pre-existing — partially offset'},
+    agri: {s1:'#1 wheat exporter',    v1:'Price windfall from crisis', s2:'Fertilizer prod.', v2:'Gains from disruption',   s3:'Barley',           v3:'Domestic supply strong'},
+    cons: {s1:'Self-sufficient',      v1:'Energy + food domestic',     s2:'Sanctions',        v2:'Limit CPG market access', s3:'Beer market',      v3:'Major brands exited 2022'},
+    cpg:  {s1:'Market disrupted',     v1:'Carlsberg/Heineken exited',  s2:'Sanctions',        v2:'CPG access limited',      s3:'Consumer',         v3:'Domestic brands filling gap'},
+  },
+};
+
+// Merge into COUNTRIES
+Object.keys(COUNTRY_TOOLTIPS).forEach(id=>{
+  if(COUNTRIES[id]) COUNTRIES[id].tt = COUNTRY_TOOLTIPS[id];
+});
 
 const RISK_COLORS={source:'#1e3a5f',critical:'#7f1d1d',high:'#9a3412',medhigh:'#92400e',medium:'#854d0e',lowmed:'#1a3a1a',low:'#14532d',default:'#1c2133'};
 const RISK_LABELS={source:'ME PRODUCER — Conflict Source Region',critical:'CRITICAL — Near-total supply threat',high:'HIGH — Severe disruption',medhigh:'MED-HIGH — Significant impact',medium:'MEDIUM — Meaningful exposure',lowmed:'LOW-MEDIUM — Price contagion',low:'LOW / GAIN — Insulated or benefits'};
@@ -651,6 +820,64 @@ function getTerritoryOverride(c){
 // MAP
 // ═══════════════════════════════════════════════════════════
 let mapReady=false;
+
+function getCountryRisk(c){
+  return (c.risks && c.risks[activeLayer]) || c.risks?.oil || 'default';
+}
+
+function switchLayer(layer){
+  activeLayer=layer;
+  // Update toggle button styles
+  document.querySelectorAll('.layer-btn').forEach(b=>{
+    const active=b.dataset.layer===layer;
+    b.style.background=active?'rgba(232,160,48,0.15)':'rgba(255,255,255,0.03)';
+    b.style.borderColor=active?'rgba(232,160,48,0.5)':'rgba(255,255,255,0.08)';
+    b.style.color=active?'var(--accent)':'var(--muted)';
+  });
+  // Update layer description
+  const descEl=document.getElementById('layerDesc');
+  if(descEl) descEl.textContent=LAYER_CONFIG[layer].desc;
+  // Recolor map countries
+  d3.selectAll('path.c')
+    .attr('fill',d=>{
+      const id=String(+d.id).padStart(3,'0');
+      if(+d.id===10) return'#0f1520';
+      const c=COUNTRIES[id];
+      if(!c) return RISK_COLORS.default;
+      return RISK_COLORS[getCountryRisk(c)];
+    })
+    .attr('stroke',d=>{
+      const id=String(+d.id).padStart(3,'0');
+      const c=COUNTRIES[id];
+      return(c&&getCountryRisk(c)==='source')?'#3a78d4':'rgba(0,0,0,0.45)';
+    })
+    .attr('stroke-width',d=>{
+      const id=String(+d.id).padStart(3,'0');
+      const c=COUNTRIES[id];
+      return(c&&getCountryRisk(c)==='source')?0.8:0.3;
+    });
+  // Rebuild sidebar ranked list
+  buildRankedList();
+}
+
+function buildRankedList(){
+  const order=['source','critical','high','medhigh','medium'];
+  const ranked=Object.values(COUNTRIES)
+    .filter(c=>order.includes(getCountryRisk(c)))
+    .sort((a,b)=>order.indexOf(getCountryRisk(a))-order.indexOf(getCountryRisk(b)))
+    .slice(0,10);
+  const pillClass={'source':'rp-src','critical':'rp-crit','high':'rp-high','medhigh':'rp-med','medium':'rp-med'};
+  const pillLabel={'source':'Source','critical':'Critical','high':'High','medhigh':'Med-High','medium':'Medium'};
+  const container=document.getElementById('rankedList');
+  if(!container) return;
+  container.innerHTML=ranked.map((c,i)=>`
+    <div class="rank-row">
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-info"><div class="rank-name">${c.name}</div><div class="rank-detail">${c.s1}: ${c.v1}</div></div>
+      <div class="rpill ${pillClass[getCountryRisk(c)]||'rp-med'}">${pillLabel[getCountryRisk(c)]||'Med'}</div>
+    </div>`).join('');
+}
+
 function initMap(){
   if(mapReady) return; mapReady=true;
   const panel=document.querySelector('.map-panel');
@@ -671,21 +898,25 @@ function initMap(){
       const feats=topojson.feature(world,world.objects.countries).features;
       g.selectAll('path.c').data(feats).enter().append('path').attr('class','c')
         .attr('d',pg)
-        .attr('fill',d=>{const id=String(+d.id).padStart(3,'0');if(+d.id===10)return'#0f1520';const c=COUNTRIES[id];return c?RISK_COLORS[c.risk]:RISK_COLORS.default;})
-        .attr('stroke',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&c.risk==='source')?'#3a78d4':'rgba(0,0,0,0.45)';})
-        .attr('stroke-width',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&c.risk==='source')?0.8:0.3;})
+        .attr('fill',d=>{const id=String(+d.id).padStart(3,'0');if(+d.id===10)return'#0f1520';const c=COUNTRIES[id];return c?RISK_COLORS[getCountryRisk(c)]:RISK_COLORS.default;})
+        .attr('stroke',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&getCountryRisk(c)==='source')?'#3a78d4':'rgba(0,0,0,0.45)';})
+        .attr('stroke-width',d=>{const id=String(+d.id).padStart(3,'0');const c=COUNTRIES[id];return(c&&getCountryRisk(c)==='source')?0.8:0.3;})
         .style('cursor',d=>{const id=String(+d.id).padStart(3,'0');return(+d.id!==10&&COUNTRIES[id])?'pointer':'default';})
         .on('mousemove',function(ev,d){
           if(+d.id===10)return;
           const id=String(+d.id).padStart(3,'0');
           const c=COUNTRIES[id]; if(!c)return;
+          const risk=getCountryRisk(c);
           const ov=getTerritoryOverride(d3.geoCentroid(d));
-          document.getElementById('ttName').textContent=ov||c.name;
-          document.getElementById('ttRisk').textContent=RISK_LABELS[c.risk]||c.risk.toUpperCase();
-          document.getElementById('ttRisk').style.color=RISK_LABEL_COLORS[c.risk]||'#fff';
-          document.getElementById('ttL1').textContent=c.s1; document.getElementById('ttV1').textContent=c.v1;
-          document.getElementById('ttL2').textContent=c.s2; document.getElementById('ttV2').textContent=c.v2;
-          document.getElementById('ttL3').textContent=c.s3; document.getElementById('ttV3').textContent=c.v3;
+          // Get layer-specific tooltip data if available, else fall back to generic
+          const tt_data = (c.tt && c.tt[activeLayer]) || {s1:c.s1,v1:c.v1,s2:c.s2,v2:c.v2,s3:c.s3,v3:c.v3};
+          const layerLabel = LAYER_CONFIG[activeLayer]?.label || '';
+          document.getElementById('ttName').textContent=(ov||c.name)+' — '+layerLabel;
+          document.getElementById('ttRisk').textContent=RISK_LABELS[risk]||risk.toUpperCase();
+          document.getElementById('ttRisk').style.color=RISK_LABEL_COLORS[risk]||'#fff';
+          document.getElementById('ttL1').textContent=tt_data.s1; document.getElementById('ttV1').textContent=tt_data.v1;
+          document.getElementById('ttL2').textContent=tt_data.s2; document.getElementById('ttV2').textContent=tt_data.v2;
+          document.getElementById('ttL3').textContent=tt_data.s3; document.getElementById('ttV3').textContent=tt_data.v3;
           tt.style.display='block';
           tt.style.left=Math.min(ev.clientX+14,window.innerWidth-235)+'px';
           tt.style.top=Math.min(ev.clientY-10,window.innerHeight-130)+'px';
