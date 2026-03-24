@@ -900,7 +900,7 @@ async function refreshNews(force){
   }
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    const resp=await fetch('https://me-crisis-proxy.jwhorton14.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       model:'claude-sonnet-4-20250514',max_tokens:2000,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       system:`You are a crisis analyst for ABInBev. Today is ${todayStr}. Search for recent news about the Iran/Middle East war impact on energy, beer, shipping, and ABI markets. Return ONLY valid JSON with no markdown:
@@ -996,7 +996,7 @@ async function refreshExec(force){
   const todayShort=today.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    const resp=await fetch('https://me-crisis-proxy.jwhorton14.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       model:'claude-sonnet-4-20250514',max_tokens:1200,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       system:`You are a crisis analyst. Today is ${todayStr}. Search for the latest breaking news TODAY and the past 48 hours about: US-Israel-Iran conflict, ceasefire negotiations, Trump announcements, military developments, Hormuz status. Only include news from the last 48 hours. Return ONLY valid JSON: {"items":[{"badge":"BREAKING|UPDATE|INTELLIGENCE","badgeStyle":"red|amber|blue","headline":"...","meta":"Source · Date"}]}`,
@@ -1056,7 +1056,7 @@ async function fetchLiveMarkets(force){
   const todayStr=today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
 
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    const resp=await fetch('https://me-crisis-proxy.jwhorton14.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       model:'claude-sonnet-4-20250514',max_tokens:1200,
       tools:[{type:'web_search_20250305',name:'web_search'}],
       system:`You are a financial data analyst. Today is ${todayStr}. Search for the CURRENT market prices for these specific instruments and return ONLY valid JSON — no markdown, no text, no explanation.
