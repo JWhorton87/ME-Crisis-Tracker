@@ -452,7 +452,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         <div class="leg-item"><div class="leg-swatch" style="background:var(--c-lowmed)"></div><div><div class="leg-label">Low-Medium</div><div class="leg-sub">Price contagion</div></div></div>
         <div class="leg-item"><div class="leg-swatch" style="background:var(--c-low)"></div><div><div class="leg-label">Low / Benefits</div><div class="leg-sub">Insulated or gains</div></div></div>
         <div class="sb-div"></div>
-        <div class="sb-title">Most Impacted Countries</div>
+        <div class="sb-title" id="rankedListTitle">Most Impacted Countries</div>
         <div id="rankedList">
         <div class="rank-row"><div class="rank-num">1</div><div class="rank-info"><div class="rank-name">South Korea</div><div class="rank-detail">12% Hormuz flows — ~90% import dep.</div></div><div class="rpill rp-crit">Critical</div></div>
         <div class="rank-row"><div class="rank-num">2</div><div class="rank-info"><div class="rank-name">Japan</div><div class="rank-detail">10% flows — 60.8% fossil · 150d reserve</div></div><div class="rpill rp-crit">Critical</div></div>
@@ -862,21 +862,30 @@ function switchLayer(layer){
 }
 
 function buildRankedList(){
-  const order=['source','critical','high','medhigh','medium'];
+  const order=['critical','high','medhigh','medium'];
+  // Filter to non-source countries only — source = conflict zone, not "impacted"
+  // Sort by active layer risk level
   const ranked=Object.values(COUNTRIES)
     .filter(c=>order.includes(getCountryRisk(c)))
     .sort((a,b)=>order.indexOf(getCountryRisk(a))-order.indexOf(getCountryRisk(b)))
-    .slice(0,10);
-  const pillClass={'source':'rp-src','critical':'rp-crit','high':'rp-high','medhigh':'rp-med','medium':'rp-med'};
-  const pillLabel={'source':'Source','critical':'Critical','high':'High','medhigh':'Med-High','medium':'Medium'};
+    .slice(0,12);
+  const pillClass={'critical':'rp-crit','high':'rp-high','medhigh':'rp-mh','medium':'rp-med'};
+  const pillLabel={'critical':'Critical','high':'High','medhigh':'Med-High','medium':'Medium'};
   const container=document.getElementById('rankedList');
   if(!container) return;
-  container.innerHTML=ranked.map((c,i)=>`
-    <div class="rank-row">
+  // Use layer-specific tooltip detail if available, else fall back to generic s1/v1
+  container.innerHTML=ranked.map((c,i)=>{
+    const tt=c.tt&&c.tt[activeLayer];
+    const detail=tt?`${tt.s1}: ${tt.v1}`:`${c.s1}: ${c.v1}`;
+    return`<div class="rank-row">
       <div class="rank-num">${i+1}</div>
-      <div class="rank-info"><div class="rank-name">${c.name}</div><div class="rank-detail">${c.s1}: ${c.v1}</div></div>
+      <div class="rank-info"><div class="rank-name">${c.name}</div><div class="rank-detail">${detail}</div></div>
       <div class="rpill ${pillClass[getCountryRisk(c)]||'rp-med'}">${pillLabel[getCountryRisk(c)]||'Med'}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  // Also update the sidebar title to reflect active layer
+  const titleEl=document.getElementById('rankedListTitle');
+  if(titleEl) titleEl.textContent=`Most Impacted — ${LAYER_CONFIG[activeLayer].label.replace(/^./,'')}`;
 }
 
 function initMap(){
@@ -937,6 +946,8 @@ function initMap(){
         svg.append('circle').attr('cx',rPt[0]).attr('cy',rPt[1]).attr('r',4).attr('fill','none').attr('stroke','#f04040').attr('stroke-width',1).attr('opacity',0.7);
         svg.append('text').attr('x',rPt[0]+7).attr('y',rPt[1]+3).text('Red Sea').style('font-family','DM Mono,monospace').style('font-size','7px').attr('fill','#f04040').attr('opacity',0.75).attr('pointer-events','none');
       }
+      // Build ranked list once map data is loaded
+      buildRankedList();
     }).catch(()=>{svg.append('text').attr('x',W/2).attr('y',H/2).attr('text-anchor','middle').attr('fill','#5a6278').style('font-family','DM Mono,monospace').style('font-size','12px').text('Map requires network — please open in a browser with internet access');});
 }
 
