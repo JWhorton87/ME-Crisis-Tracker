@@ -1456,6 +1456,160 @@ function updateDayCounter(){
 }
 
 // ═══════════════════════════════════════════════════════════
+// DYNAMIC MAP RISK ASSESSMENT
+// Reassesses 20 key CPG markets based on today's news.
+// Merges AI-returned deltas on top of static baseline.
+// ═══════════════════════════════════════════════════════════
+const RISK_KEY='abi_me_risk_v1', RISK_TTL=4*60*60*1000; // 4h cache
+
+const DYNAMIC_COUNTRIES = {
+  '076':'Brazil','840':'USA','484':'Mexico','156':'China','356':'India',
+  '710':'South Africa','608':'Philippines','410':'South Korea','392':'Japan',
+  '036':'Australia','792':'Turkey','826':'UK','050':'Bangladesh',
+  '170':'Colombia','566':'Nigeria','360':'Indonesia','124':'Canada',
+  '704':'Vietnam','056':'Belgium','032':'Argentina'
+};
+
+const RISK_LEVELS=['source','critical','high','medhigh','medium','lowmed','low'];
+
+async function fetchDynamicRisk(force){
+  if(!force){
+    try{
+      const c=localStorage.getItem(RISK_KEY);
+      if(c){
+        const{ts,deltas}=JSON.parse(c);
+        if(Date.now()-ts<RISK_TTL){ applyRiskDeltas(deltas); return; }
+      }
+    }catch(e){}
+  }
+
+  const today=new Date();
+  const todayStr=today.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+
+  // Show subtle indicator on map tab
+  const mapTs=document.getElementById('mapTs');
+  if(mapTs) mapTs.textContent='⟳ Reassessing country risk from live news...';
+
+  try{
+    const countryList=Object.entries(DYNAMIC_COUNTRIES)
+      .map(([id,name])=>{
+        const c=COUNTRIES[id];
+        if(!c) return null;
+        return `${name} (current: oil=${c.risks.oil}, agri=${c.risks.agri}, cons=${c.risks.cons}, cpg=${c.risks.cpg})`;
+      }).filter(Boolean).join('\n');
+
+    const resp=await fetch('https://me-crisis-proxy.jwhorton14.workers.dev',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:`You are a geopolitical risk analyst for CPG and beer companies. Today is ${todayStr}. The Iran/US/Israel war started Feb 28, 2026.
+
+Search for today's latest developments on: oil prices, food/barley/wheat/aluminum prices, consumer inflation, and supply chain disruptions caused by the ME war.
+
+Based on what you find, assess whether any of these 20 key CPG markets have seen a MEANINGFUL risk change from their current baseline ratings. Only flag countries where something materially changed TODAY or in the last 48 hours.
+
+Risk scale: source > critical > high > medhigh > medium > lowmed > low
+Layers:
+- oil: Oil & Gas supply/energy risk
+- agri: Beer & Agriculture risk (barley, wheat, aluminum, glass, fertilizer)
+- cons: Consumer & Inflation risk (purchasing power, CPI, beer volumes)
+- cpg: Total CPG/Beer market risk (composite)
+
+Countries to assess:
+${countryList}
+
+Return ONLY valid JSON, no markdown:
+{"deltas":[{"id":"076","name":"Brazil","layer":"agri","newRisk":"critical","reason":"One sentence why this changed today","previousRisk":"high"}]}
+
+RULES:
+1. Only include countries where risk genuinely changed based on TODAY's news
+2. If nothing material changed for a country, do NOT include it
+3. Maximum 8 deltas — only the most significant changes
+4. reason must cite a specific news development from the last 48h`,
+        messages:[{role:'user',content:`Search for latest ME crisis developments as of ${todayStr} affecting these 20 CPG markets. Return only genuine risk changes as JSON deltas. If markets are stable, return {"deltas":[]}`}]
+      })
+    });
+
+    if(!resp.ok) throw new Error(`Risk API ${resp.status}`);
+
+    const data=await resp.json();
+    const text=data.content.map(b=>b.type==='text'?b.text:'').join('');
+    const match=text.match(/\{[\s\S]*"deltas"\s*:\s*\[[\s\S]*\]\s*\}/);
+    if(!match) throw new Error('No valid JSON in risk response');
+
+    const {deltas}=JSON.parse(match[0]);
+    if(!Array.isArray(deltas)) throw new Error('Invalid deltas array');
+
+    // Validate — only accept known risk levels and country IDs
+    const validDeltas=deltas.filter(d=>
+      DYNAMIC_COUNTRIES[d.id] &&
+      RISK_LEVELS.includes(d.newRisk) &&
+      d.layer && ['oil','agri','cons','cpg'].includes(d.layer) &&
+      d.reason
+    );
+
+    try{localStorage.setItem(RISK_KEY,JSON.stringify({ts:Date.now(),deltas:validDeltas}));}catch(e){}
+
+    applyRiskDeltas(validDeltas);
+
+    const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    const changedCount=validDeltas.length;
+    if(mapTs){
+      mapTs.textContent = changedCount>0
+        ? `⚡ ${changedCount} risk rating${changedCount>1?'s':''} updated from live news · ${now} ET`
+        : `✓ All 20 markets assessed — no material changes · ${now} ET`;
+    }
+
+  }catch(e){
+    console.warn('[Risk] Dynamic assessment failed:', e.message);
+    const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+    if(mapTs) mapTs.textContent=`Map · Static baseline (live reassessment unavailable) · ${now} ET`;
+  }
+}
+
+function applyRiskDeltas(deltas){
+  if(!deltas||deltas.length===0) return;
+  deltas.forEach(d=>{
+    const c=COUNTRIES[d.id];
+    if(!c||!c.risks) return;
+    // Apply the delta to the country's risk object
+    c.risks[d.layer]=d.newRisk;
+    // Store the reason in the tooltip tt object for that layer
+    if(!c.tt) c.tt={};
+    if(!c.tt[d.layer]) c.tt[d.layer]={s1:c.s1,v1:c.v1,s2:c.s2,v2:c.v2,s3:c.s3,v3:c.v3};
+    // Prepend the live reason to s1/v1
+    c.tt[d.layer].s1='⚡ Live update';
+    c.tt[d.layer].v1=d.reason;
+    console.log(`[Risk] ${d.name} ${d.layer}: ${d.previousRisk} → ${d.newRisk} | ${d.reason}`);
+  });
+
+  // If map is currently visible, recolor and rebuild ranked list
+  if(mapReady){
+    d3.selectAll('path.c')
+      .attr('fill',d=>{
+        const id=String(+d.id).padStart(3,'0');
+        if(+d.id===10) return'#0f1520';
+        const c=COUNTRIES[id];
+        return c?RISK_COLORS[getCountryRisk(c)]:RISK_COLORS.default;
+      })
+      .attr('stroke',d=>{
+        const id=String(+d.id).padStart(3,'0');
+        const c=COUNTRIES[id];
+        return(c&&getCountryRisk(c)==='source')?'#3a78d4':'rgba(0,0,0,0.45)';
+      })
+      .attr('stroke-width',d=>{
+        const id=String(+d.id).padStart(3,'0');
+        const c=COUNTRIES[id];
+        return(c&&getCountryRisk(c)==='source')?0.8:0.3;
+      });
+    buildRankedList();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
 // GOD REFRESH — updates every live element in the tracker
 // ═══════════════════════════════════════════════════════════
 async function refreshAll(){
@@ -1478,12 +1632,13 @@ async function refreshAll(){
     localStorage.removeItem(NEWS_KEY);
     localStorage.removeItem(EXEC_KEY);
     localStorage.removeItem(MARKET_KEY);
+    localStorage.removeItem(RISK_KEY);
   }catch(e){}
 
   // Always update day counter immediately — no API needed
   updateDayCounter();
 
-  // Run all live fetches in parallel
+  // Run core fetches in parallel — markets, exec intel, news
   const [markets]=await Promise.all([
     fetchLiveMarkets(true),
     refreshExec(true),
@@ -1493,12 +1648,16 @@ async function refreshAll(){
   // Apply market data to every element across all tabs
   applyMarketData(markets);
 
+  // Run dynamic risk assessment after core data — staggered to avoid rate limits
+  await new Promise(r=>setTimeout(r,2000));
+  await fetchDynamicRisk(true);
+
   const now=new Date().toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
   const todayShort=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   btn.textContent='⟳ Refresh All'; btn.disabled=false;
 
   // Update all per-tab timestamps
-  ['execTs','mapTs','chartsTs'].forEach(id=>{
+  ['execTs','chartsTs'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.textContent=`All data refreshed · ${todayShort} · ${now} ET`;
   });
